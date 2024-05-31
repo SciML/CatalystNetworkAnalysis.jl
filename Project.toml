@@ -1,0 +1,13 @@
+name = "CatalystNetworkAnalysis"
+uuid = "5fe4a9df-d2e2-44a6-8bda-0abe10269b5a"
+authors = ["Vincent Du", "Torkel Loman", "Samuel Isaacson"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.6.7"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
