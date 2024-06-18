@@ -5,15 +5,19 @@
 """
 
 function ispersistent(rs::ReactionSystem) 
-    conslaws = conservationlaws(rs)
-    cyclemat = Catalyst.cycles(rs)
-    conservative = !isempty(conslaws) && 
-        any(row->all(x->x>=0, row), eachrow(conslaws))
-    consistent = !isempty(cyclemat) &&
-        any(col->all(x->x>=0, col), eachcol(cyclemat))
-
     siphons = minimalsiphons(rs)
-    conservative && consistent && all(s->!iscritical(s, conslaws), siphons)
+    conservative = isconservative(rs); consistent = isconsistent(rs)
+
+    # Conservative case
+    if conservative
+        not(consistent) && return false
+        all(s->!iscritical(s, conslaws), siphons) && return true
+    else
+        not(consistent) && return false
+
+    end
+
+    error("Inconclusive; No known way to determine whether this network is persistent or not.")
 end
 
 
@@ -146,12 +150,47 @@ function cycles(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
 end
 
 """
-    fluxvectors(rs::ReactionSystem)
+    isconsistent(rs::ReactionSystem)
 
-    See documentation for [`cycles`](@ref). 
+    Checks if a reaction network is consistent, i.e. admits a positive equilibrium for some choice of rate constants. Equivalent to [`ispositivelydependent`](@ref).
 """
+function isconsistent(rs::ReactionSystem) 
+    cyclemat = cycles(rs); r, l = size(cyclemat)
 
-function fluxvectors(rs::ReactionSystem) 
-    cycles(rs)
+    for i in 1:l
+        all(>(0), @view cyclemat[:,i]) && return true
+    end
+
+    model = Model(HiGHS.Optimizer); set_silent(model)
+    @variable(model, coeffs[1:l])
+    @objective(model, Min, 0)
+    @constraint(model, cyclemat*coeffs >= ones(r))
+
+    optimize!(model)
+    is_solved_and_feasible(model) ? true : false
 end
 
+function isconservative(rs::ReactionSystem) 
+    conslaws = conservationlaws(rs); l, r = size(conslaws)
+
+    for i in 1:l
+        all(>(0), @view cyclemat[i,:]) && return true
+    end
+
+    model = Model(HiGHS.Optimizer); set_silent(model)
+    @variable(model, coeffs[1:n])
+    @objective(model, Min, 0)
+    @constraint(model, conslaws'*coeffs >= ones(n))
+    
+    optimize!(model)
+    is_solved_and_feasible(model) ? true : false
+end
+
+"""
+    ispositivelydependent(rs::ReactionSystem)
+
+    See documentation for [`isconsistent`](@ref).
+"""
+function ispositivelydependent(rs::ReactionSystem) 
+    isconsistent(rs)
+end
