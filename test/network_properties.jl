@@ -10,7 +10,7 @@ rng = StableRNG(514)
 # Tests network analysis functions on MAPK network (by comparing to manually computed outputs).
 let
     MAPK = @reaction_network MAPK begin
-        (k₁, k₂),KKK + E1 <--> KKKE1
+        (k₁, k₂), KKK + E1 <--> KKKE1
         k₃, KKKE1 --> KKK_ + E1
         (k₄, k₅), KKK_ + E2 <--> KKKE2
         k₆, KKKE2 --> KKK + E2
@@ -20,7 +20,7 @@ let
         k₁₂, KKPKKK_ --> KKPP + KKK_
         (k₁₃, k₁₄), KKP + KKPase <--> KKPKKPase
         k₁₅, KKPPKKPase --> KKP + KKPase
-        k₁₆,KKPKKPase --> KK + KKPase
+        k₁₆, KKPKKPase --> KK + KKPase
         (k₁₇, k₁₈), KKPP + KKPase <--> KKPPKKPase
         (k₁₉, k₂₀), KKPP + K <--> KKPPK
         k₂₁, KKPPK --> KKPP + KP
@@ -44,9 +44,9 @@ let
     rn2 = @reaction_network begin
         (k₁, k₂), E + S1 <--> ES1
         (k₃, k₄), E + S2 <--> ES2
-        (k₅, k₆),  S2 + ES1 <--> ES1S2
+        (k₅, k₆), S2 + ES1 <--> ES1S2
         (k₆, k₇), ES1S2 --> S1 + ES2
-        k₈, ES1S2 --> E+P
+        k₈, ES1S2 --> E + P
         (k₉, k₁₀), S1 <--> 0
         (k₁₀, k₁₁), 0 <--> S2
         k₁₂, P --> 0
@@ -85,16 +85,16 @@ let
     rn3 = @reaction_network begin
         (k₁, k₂), A11 <--> 0
         (k₃, k₄), A11 <--> A13
-        (k₅, k₆),  0 <--> A12
+        (k₅, k₆), 0 <--> A12
         (k₆, k₇), 0 <--> A2
         k₈, A10 --> 0
         (k₉, k₁₀), A12 <--> A6
-        (k₁₁, k₁₂), A6<--> A4
+        (k₁₁, k₁₂), A6 <--> A4
         (k₁₃, k₁₄), A4 <--> A3
         k₁₅, A8 --> A9
-        (k₁₆,k₁₇), A8 <--> A3 + A11
+        (k₁₆, k₁₇), A8 <--> A3 + A11
         k₁₈, A9 --> A3 + A10
-        k₁₉, A2+A4 --> A2 + A6
+        k₁₉, A2 + A4 --> A2 + A6
     end
     rcs, B = reactioncomplexes(rn3)
     @test length(rcs) == 15
@@ -135,7 +135,7 @@ let
     rates = Dict(zip(parameters(rn4), k))
     @test Catalyst.iscomplexbalanced(rn4, rates) == true
 end
-    
+
 ### Tests Reversibility ###
 
 # Test function.
@@ -161,7 +161,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 
 let
@@ -179,7 +179,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 let
     rn = @reaction_network begin
@@ -191,7 +191,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 let
     rn = @reaction_network begin
@@ -205,7 +205,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 let
     rn = @reaction_network begin
@@ -220,7 +220,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
 let
     rn = @reaction_network begin
@@ -233,7 +233,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 let
     rn = @reaction_network begin
@@ -246,17 +246,19 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true  
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
 let
-    rn = @reaction_network begin (k2, k1), A + B <--> 2A end
+    rn = @reaction_network begin
+        (k2, k1), A + B <--> 2A
+    end
     rev = true
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
 let
     rn = @reaction_network begin
@@ -271,7 +273,7 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
 let
     rn = @reaction_network begin
@@ -286,12 +288,12 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == false 
+    @test Catalyst.iscomplexbalanced(rn, rates) == false
 end
 
 let
     rn = @reaction_network begin
-        k1, 3A + 2B --> 3C 
+        k1, 3A + 2B --> 3C
         k2, B + 4D --> 2E
         k3, 2E --> 3C
         (k4, k5), B + 4D <--> 3A + 2B
@@ -301,6 +303,5 @@ let
 
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
-    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true
 end
-

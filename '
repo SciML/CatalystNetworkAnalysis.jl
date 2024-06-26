@@ -1,0 +1,141 @@
+# Check if a vector v is sign-compatible with the image space of a matrix S
+function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64} = [])
+    n, r = size(S)
+    assignedindices = deleteat!(collect(1:r), freeindices)
+
+    if length(assignedindices) + length(freeindices) != r
+        error("The number of free signs and assigned signs does not sum to the length of the vector.")
+    end
+
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, coeffs[1:r])
+    @objective(model, Min, 0)
+    @constraint(model, sign.((S*coeffs)[assignedindices]) == sign.(v))
+
+    optimize!(model)
+    is_solved_and_feasible(model) ? true : false
+end
+
+# Given a sign pattern for σ, return the partial sign pattern for α and the indices that are free
+function generate_α_signpattern(rn::ReactionSystem, σ::Vector{Float64}) 
+    S = netstoichmat(rn); (n, r) = size(S)
+    α_sp = Int64[]; freeindices = Int64[]
+
+    for rxn in 1:r 
+        supp = findall(<(0), @view S[:, r])
+
+        if all(==(0), σ[supp]) 
+            push!(α_sp, 0)
+        elseif all(>=(0), σ[supp]) 
+            push!(α_sp, 1) 
+        elseif all(<=(0), σ[supp]) 
+            push!(α_sp, -1)
+        else
+            push!(freeindices, rxn)
+        end
+    end
+
+    α_sp, freeindices
+end
+
+# check the sign compatibility function 
+function isconcordant(rn::ReactionSystem) 
+    S = netstoichmat(rn); (n, r) = size(S); kerS = nullspace(S)
+    fixedsigns = Int64[];
+    for s in 1:n
+        all(==(0), S[s, :]) && push!(fixedsigns, s)
+    end
+    sp = Int64[]
+
+    while true 
+        if issigncompatible(S, sp, freeindices = collect(length(sp)+1:n))
+            if length(sp) == n
+                all(==(0), sp) && return true
+                α_sp, freeidxs = generate_α_signpattern(sp)
+                issigncompatible(kerS, α_sp, freeindices = freeidxs) ? (return false) : (sp = movebackward(sp, fixedsigns))
+            else
+                sp = moveforward(sp, fixedsigns, n)
+            end
+        else
+            sp = movebackward(sp, fixedsigns)
+        end
+    end
+end
+
+function moveforward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64}, n::Int64) 
+    while length(signpattern) + 1 ∈ fixedsigns
+        push!(signpattern, 0)
+    end
+
+    length(signpattern) == n ? (return signpattern) : (return push!(signpattern, 1))
+end
+
+# Move backward triggers whenever we find a sign-pattern that is not compatible with the stoichiometric subspace, pruning those branches of the tree
+# - if 0, we go to the positive 
+# - if positive, we go to negative
+# - if negative, we go to 0
+
+function movebackward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64})
+    if signpattern == [] return [] end
+
+    if length(signpattern) ∈ fixedsigns
+        while length(signpattern) ∈ fixedsigns
+            pop!(signpattern)
+        end
+        return movebackward(signpattern, fixedsigns)
+    elseif signpattern[end] == 0
+        pop!(signpattern)
+        return movebackward(signpattern, fixedsigns)
+    else
+        # If we are currently at a positive or negative node, move to a different child of the mother node. 
+        if signpattern[end] == 1
+            pop!(signpattern)
+            all(==(0), signpattern) ? push!(signpattern, 0) : push!(signpattern, -1)
+            return signpattern
+        else
+            pop!(signpattern)
+            push!(signpattern, 0)
+            return signpattern
+        end
+    end
+end
+    
+
+"""
+"""
+function hasuniqueequilibria(rn::ReactionSystem) 
+    nps = get_networkproperties(rn)
+    complexes, D = reactioncomplexes(rn)
+    δ = deficiency(rn)
+    concordant = isconcordant(rn)
+
+    δ == 0 && return true 
+    satisfiesdeficiencyone(rn) && return true 
+    concordant && return true
+    !concordant && CNA.ispositivelydependent(rn) && return false
+    δ == 1 && return deficiencyonealgorithm(rn)
+    
+    error("The network is discordant and high deficiency, but this function currently cannot conclude whether the network has the potential to have multiple equilibria.")
+end
+
+function isstronglyconcordant(rn::ReactionSystem) 
+    
+end
+
+function isdegenerate(rn::ReactionSystem) 
+    
+end
+
+function fullyopenextension(rn::ReactionSystem) 
+    
+end
+
+function speciesreactiongraph(rn::ReactionSystem) 
+    s = numspecies(rn); sm = speciesmap(rn)
+    r = numreactions(rn); 
+
+    G = Digraph(s+r)
+    adj = zeros(s+r, s+r)
+   
+end
