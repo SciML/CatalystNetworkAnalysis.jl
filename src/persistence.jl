@@ -8,12 +8,12 @@ function ispersistent(rs::ReactionSystem)
     siphons = minimalsiphons(rs)
     conservative = isconservative(rs)
     consistent = isconsistent(rs)
+    conslaws = conservationlaws(rs)
 
     # Conservative case
     if conservative
         all(s -> !iscritical(s, conslaws), siphons) && return true
-    else
-        not(consistent) && return false
+        !consistent && return false
     end
 
     error("The persistence test is inconclusive; this function currently cannot determine whether this network is persistent or not.")
@@ -88,7 +88,6 @@ function removesupersets(indexsets::AbstractArray{<:Array})
     minimalsets = Array[]
 
     for s in indexsets
-        println(s)
         if !any(ms->issubset(ms, s), minimalsets)
             push!(minimalsets, s)
         end
@@ -135,7 +134,7 @@ end
 function iscritical(s::Vector, conslaws)
     supports = [findall(!=(0), conslaws[i, :]) for i = 1:size(conslaws, 1)]
 
-    # If the support of any conservation law is contained in the siphon, then it is not critical
+    # If the support of any non-negative conservation law is contained in the siphon, then it is not critical
     all(sup -> !issubset(sup, s), supports)
 end
 
@@ -181,35 +180,41 @@ end
 """
 function isconsistent(rs::ReactionSystem)
     cyclemat = cycles(rs)
-    r, l = size(cyclemat)
+    n, m = size(cyclemat)
 
-    for i = 1:l
+    for i = 1:m
         all(>(0), @view cyclemat[:, i]) && return true
     end
 
     model = Model(HiGHS.Optimizer)
     set_silent(model)
-    @variable(model, coeffs[1:l])
+    @variable(model, coeffs[1:m])
     @objective(model, Min, 0)
-    @constraint(model, cyclemat * coeffs >= ones(r))
+    @constraint(model, cyclemat * coeffs >= ones(n))
 
     optimize!(model)
     is_solved_and_feasible(model) ? true : false
 end
 
+
+"""
+    isconservative(rs::ReactionSystem)
+
+    Checks if a reaction network is conservative, i.e. admits a positive linear conserved quantity. A positive linear conserved quantity is one for which the coefficient of each species is greater than zero. 
+"""
 function isconservative(rs::ReactionSystem)
     conslaws = conservationlaws(rs)
-    l, r = size(conslaws)
+    n, m = size(conslaws)
 
-    for i = 1:l
-        all(>(0), @view cyclemat[i, :]) && return true
+    for i = 1:n
+        all(>(0), @view conslaws[i, :]) && return true
     end
 
     model = Model(HiGHS.Optimizer)
     set_silent(model)
-    @variable(model, coeffs[1:r])
+    @variable(model, coeffs[1:n])
     @objective(model, Min, 0)
-    @constraint(model, conslaws' * coeffs >= ones(l))
+    @constraint(model, conslaws' * coeffs >= ones(m))
 
     optimize!(model)
     is_solved_and_feasible(model) ? true : false
