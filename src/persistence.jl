@@ -11,23 +11,19 @@ function ispersistent(rs::ReactionSystem)
 
     # Conservative case
     if conservative
-        not(consistent) && return false
         all(s -> !iscritical(s, conslaws), siphons) && return true
     else
         not(consistent) && return false
-
     end
 
-    error(
-        "Inconclusive; No known way to determine whether this network is persistent or not.",
-    )
+    error("The persistence test is inconclusive; this function currently cannot determine whether this network is persistent or not.")
 end
 
 
 """
     minimalsiphons(rs::ReactionSystem)
 
-    Constructs the set of minimal siphons of a reaction network, where a siphon is a set of species that can be "switched off," i.e. if the species each have concentration 0, the concentration of all the species will remain 0 for all time. A minimal siphon is one that does not contain a siphon as a subset.
+    Constructs the set of minimal siphons of a reaction network, where a siphon is a set of species that can be "switched off," i.e. if the species each have concentration 0, the concentration of all the species will remain 0 for all time. A minimal siphon is one that does not contain a siphon as a strict subset.
 """
 
 function minimalsiphons(rs::ReactionSystem; algorithm = :SMT)
@@ -43,17 +39,26 @@ end
 function minimalsiphons_smt(rs::ReactionSystem)
     ns = numspecies(rs)
     sm = speciesmap(rs)
-    @satvariable(specs[1:ns], Bool)
-    constraints = [or(specs)]
-    siphons = Array{Int64}[]
 
-    # Set up siphon constraints
+    # We encode the problem as a Boolean satisfiability problem. In a siphon search, species that belong to the siphon have a value of 1, and those that do not have a value of 0
+    @satvariable(specs[1:ns], Bool)
+
+    # Our initial constraint requires that there is at least one element in the siphon. 
+    constraints = [or(specs)]
+    siphons = Array{Int}[]
+
+    # Each reaction adds some constraint to our satisfiability problem. 
     for rx in reactions(rs)
+        # Determine substrate and product species for the given reaction. 
         subs = rx.substrates
         prods = rx.products
         sub_idx = [sm[sub] for sub in subs]
         prod_idx = [sm[prod] for prod in prods]
 
+        # Add constraints as such: 
+        # If the reaction has ∅ as a substrate complex, then it cannot be a member of a siphon. 
+        # If s is produced by the reaction, then s = 1 implies that there is some species in the substrate complex that is also equal to 1. 
+        
         for p in prod_idx
             if isempty(subs)
                 cons = not(specs[p])
@@ -64,17 +69,31 @@ function minimalsiphons_smt(rs::ReactionSystem)
         end
     end
 
-    # Iterate until all siphons are found
+    # Solve the CSP to find a siphon. 
     status = sat!(constraints..., solver = Z3())
 
+    # Any time we find a siphon, we must add another constraint in order to ensure that the siphons are minimal. To disallow 
     while status == :SAT
-        siphon = findall(value(specs))
+        siphon = findall(Satisfiability.value(specs))
         push!(siphons, siphon)
         push!(constraints, or(not.(specs[siphon])))
         status = sat!(constraints..., solver = Z3())
     end
 
-    return siphons
+    return removesupersets(siphons)
+end
+
+function removesupersets(indexsets::AbstractArray{<:Array})
+    indexsets = sort(indexsets, by=x->length(x))
+    minimalsets = Array[]
+
+    for s in indexsets
+        println(s)
+        if !any(ms->issubset(ms, s), minimalsets)
+            push!(minimalsets, s)
+        end
+    end
+    return minimalsets
 end
 
 # TODO: Check if this can handle open reaction networks
