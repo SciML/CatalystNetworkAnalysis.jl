@@ -8,11 +8,11 @@ function ispersistent(rs::ReactionSystem)
     siphons = minimalsiphons(rs)
     conservative = isconservative(rs)
     consistent = isconsistent(rs)
-    conslaws = conservationlaws(rs)
+    S = netstoichmat(rs)
 
     # Conservative case
     if conservative
-        all(s -> !iscritical(s, conslaws), siphons) && return true
+        all(s -> !iscritical(s, S), siphons) && return true
         !consistent && return false
     end
 
@@ -127,15 +127,18 @@ function minimalsiphons_alg(rs::ReactionSystem)
 end
 
 """
-    iscritical(s, conslaws)
+    iscritical(siphon, S)
 
-    Checks if a siphon is critical, meaning that it does not contain the support of some conservation law. A reaction network with a critical siphon cannot be persistent.
+    Checks if a siphon is critical, meaning that it does not contain the support of some positive conservation law. A reaction network with a critical siphon cannot be persistent.
 """
-function iscritical(s::Vector, conslaws)
-    supports = [findall(!=(0), conslaws[i, :]) for i = 1:size(conslaws, 1)]
 
-    # If the support of any non-negative conservation law is contained in the siphon, then it is not critical
-    all(sup -> !issubset(sup, s), supports)
+function iscritical(siphon::Vector, S::Matrix)
+    # Takes the rows of the stoichiometric matrix corresponding to the siphon species
+    S_r = S[siphon, :]
+
+    # If there is a non-negative vector in the nullspace of S_red', then there is a positive conservation law with a support that is the subset of the siphon, and the siphon is not critical 
+    conslaws_r = conservationlaws(S_r)
+    !haspositivesolution(copy(conslaws_r'), nonneg = true)
 end
 
 """
@@ -180,22 +183,8 @@ end
 """
 function isconsistent(rs::ReactionSystem)
     cyclemat = cycles(rs)
-    n, m = size(cyclemat)
-
-    for i = 1:m
-        all(>(0), @view cyclemat[:, i]) && return true
-    end
-
-    model = Model(HiGHS.Optimizer)
-    set_silent(model)
-    @variable(model, coeffs[1:m])
-    @objective(model, Min, 0)
-    @constraint(model, cyclemat * coeffs >= ones(n))
-
-    optimize!(model)
-    is_solved_and_feasible(model) ? true : false
+    haspositivesolution(cyclemat)
 end
-
 
 """
     isconservative(rs::ReactionSystem)
@@ -204,20 +193,7 @@ end
 """
 function isconservative(rs::ReactionSystem)
     conslaws = conservationlaws(rs)
-    n, m = size(conslaws)
-
-    for i = 1:n
-        all(>(0), @view conslaws[i, :]) && return true
-    end
-
-    model = Model(HiGHS.Optimizer)
-    set_silent(model)
-    @variable(model, coeffs[1:n])
-    @objective(model, Min, 0)
-    @constraint(model, conslaws' * coeffs >= ones(m))
-
-    optimize!(model)
-    is_solved_and_feasible(model) ? true : false
+    haspositivesolution(copy(conslaws'))
 end
 
 """
@@ -227,4 +203,41 @@ end
 """
 function ispositivelydependent(rs::ReactionSystem)
     isconsistent(rs)
+end
+
+# Given a matrix M, evaluate whether there is some x in the image space of M that is positive. If nonneg is true, instead looks for a non-negative solution.  
+function haspositivesolution(M::Matrix; nonneg = false) 
+    isempty(M) && return false
+    m, n = size(M)
+
+    for i = 1:n
+        all(>(0), @view M[:, i]) && return true
+    end
+
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, coeffs[1:n])
+    @objective(model, Min, 0)
+
+    nonneg ? 
+        @constraint(model, M * coeffs >= zeros(m)) : 
+        @constraint(model, M * coeffs >= ones(m))
+
+    optimize!(model)
+    is_solved_and_feasible(model) ? true : false
+end
+
+# Suppose we have a cone defined by the intersection of the subspace Sx = 0 and the positive orthant. Then isextreme(S, x) tests whether the set of indices in x
+function isextreme_poscone(S::Matrix{Float64}; idxset::Vector = [], x::Vector = []) 
+    m, n = size(S)
+    if isempty(x) && isempty(idxset)
+        error("Must provide either an index set or a solution vector.")
+    elseif !isempty(x) 
+        S*x == 0 && error("x is not a solution of Sx = 0.")
+        idxset = findall(!=(0), x)
+    end
+
+    cone_mat = [I; S; -S] 
+    cone_mat_eq = cone_mat[[idxset..., n+1:n+2*m...], :]
+    return rank(cone_mat_eq) == n - 1
 end
