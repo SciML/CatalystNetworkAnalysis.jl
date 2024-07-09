@@ -20,6 +20,11 @@ function ispersistent(rs::ReactionSystem)
 end
 
 
+
+###############
+### SIPHONS ###
+###############
+
 """
     minimalsiphons(rs::ReactionSystem)
 
@@ -141,6 +146,18 @@ function iscritical(siphon::Vector, S::Matrix)
     !haspositivesolution(copy(conslaws_r'), nonneg = true)
 end
 
+
+
+
+
+#############################
+### CYCLES AND FLUX MODES ###
+#############################
+
+
+
+
+
 """
     cycles(rs::ReactionSystem)
 
@@ -228,7 +245,7 @@ function haspositivesolution(M::Matrix; nonneg = false)
 end
 
 # Suppose we have a cone defined by the intersection of the subspace Sx = 0 and the positive orthant. Then isextreme(S, x) tests whether the set of indices in x
-function isextreme_poscone(S::Matrix{Float64}; idxset::Vector = [], x::Vector = []) 
+function isextreme_poscone(S::Matrix; idxset::Vector = [], x::Vector = []) 
     m, n = size(S)
     if isempty(x) && isempty(idxset)
         error("Must provide either an index set or a solution vector.")
@@ -238,6 +255,25 @@ function isextreme_poscone(S::Matrix{Float64}; idxset::Vector = [], x::Vector = 
     end
 
     cone_mat = [I; S; -S] 
-    cone_mat_eq = cone_mat[[idxset..., n+1:n+2*m...], :]
+    cone_mat_eq = cone_mat[[deleteat!(collect(1:n), idxset)..., n+1:n+2*m...], :]
     return rank(cone_mat_eq) == n - 1
+end
+
+"""
+    elementaryfluxmodes(rn::ReactionSystem)
+
+    Given a reaction network, returun the set of elementary flux modes of the reaction network. 
+"""
+
+function elementaryfluxmodes(rn::ReactionSystem)
+    S = netstoichmat(rn)
+    m, n = size(S)
+    hyperplanes = [Polyhedra.HyperPlane(S[i, :], 0) for i in 1:m]
+    halfspaces = [Polyhedra.HalfSpace(-I(n)[i, :], 0) for i in 1:n]
+    polycone = Polyhedra.polyhedron(hrep(hyperplanes, halfspaces))
+
+    Polyhedra.vrep(polycone)
+    Polyhedra.removevredundancy!(polycone)
+
+    EFMs = reduce(hcat, map(x->x.a, polycone.vrep.rays.rays))
 end
