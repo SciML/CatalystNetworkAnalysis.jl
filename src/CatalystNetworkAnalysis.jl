@@ -5,6 +5,7 @@ using Satisfiability
 using Oscar
 using JuMP, HiGHS
 using LinearAlgebra
+using Graphs
 
 import ModelingToolkit as MT
 

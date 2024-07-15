@@ -1,5 +1,5 @@
 # Check if a vector v is sign-compatible with the image space of a matrix S
-function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64}=Int[])
+function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64}=Int[], NL = false)
     n, m = size(S)
 
     if length(v) + length(freeindices) != n
@@ -17,9 +17,14 @@ function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64}=Int[]
 
     @variable(model, coeffs[1:m])
     @objective(model, Min, 0)
-    @constraint(model, (S*coeffs)[zeroindices] == zeros(length(zeroindices)))
-    @constraint(model, (S*coeffs)[posindices] >= ones(length(posindices)))
-    @constraint(model, (S*coeffs)[negindices] <= -ones(length(negindices)))
+
+    if !NL
+        @constraint(model, (S*coeffs)[zeroindices] == zeros(length(zeroindices)))
+        @constraint(model, (S*coeffs)[posindices] >= ones(length(posindices)))
+        @constraint(model, (S*coeffs)[negindices] <= -ones(length(negindices)))
+    else
+        @constraint(model, sign.(S*coeffs) == sign.(v))
+    end
 
     optimize!(model)
     is_solved_and_feasible(model) ? true : false
