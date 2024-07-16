@@ -6,6 +6,7 @@ using Oscar
 using JuMP, HiGHS
 using LinearAlgebra
 using Graphs
+using IterTools
 
 import ModelingToolkit as MT
 
@@ -15,6 +16,5 @@ include("concordance.jl")
 export isconcordant
 include("deficiencyonealgorithm.jl")
 export deficiencyonealgorithm
-
 
 end

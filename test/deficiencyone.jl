@@ -75,24 +75,25 @@ let
         k13, B + E --> C
     end
 
+    # By making D --> C irreversible, we add another terminal linkage class, {C}
     multiple_trivial_tlcs = @reaction_network begin
         k1, 2A --> B
         (k2, k3), B <--> C + D
         (k4, k5), C + D <--> F
         (k6, k7), C + D <--> E
-        (k8, k9), C <--> D
-        (k10, k11), D <--> A
-        k12, D --> B + E
-        k13, B + E --> C
+        k8, D --> C
+        k9, D --> A
+        k10, D --> B + E
+        k11, B + E --> C
     end
 
-    part1 = generatepartitions(one_trivial_tlc)
-    part0 = generatepartitions(zero_trivial_tlc)
-    partn = generatepartitions(multiple_trivial_tlc)
+    part1 = C.generatepartitions(one_trivial_tlc)
+    part0 = C.generatepartitions(zero_trivial_tlc)
+    partn = C.generatepartitions(multiple_trivial_tlcs)
 
     @test length(part1) == 4 # (3^2+1) / 2 - 1
     @test length(part0) == 1 # (3^2+1) / 2 - 2^2
-    @test length(partn) == 5 # (3^2+1) / 2
+    @test length(partn) == 5 # (3^3+1) / 2
 end
 
 # Testing whether the proper confluence vector orientation is identified
@@ -100,8 +101,15 @@ end
 
 let
     rn = @reaction_network begin
+        (k1, k2), A + S <--> AS
+        (k3, k4), B + S <--> BS
+        k5, AS + BS --> C + 2S
+        (k6, k7), A <--> 0
+        (k8, k9), B <--> 0
+        k10, C --> 0
     end
 
+    C.confluencevector(rn)
 end
 
 # Testing whether the deficiency one algorithm returns the correct answer
@@ -126,8 +134,8 @@ let
         (k5, k6), B <--> A
     end
 
-    @test all(isregular, [rn1, rn2, rn3]) == true
-    @test deficiencyonealgorithm(rn1) == false
-    @test deficiencyonealgorithm(rn2) == true 
-    @test deficiencyonealgorithm(rn3) == false
+    @test all(C.isregular, [rn1, rn2, rn3]) == true
+    @test C.deficiencyonealgorithm(rn1) == false
+    @test C.deficiencyonealgorithm(rn2) == true 
+    @test C.deficiencyonealgorithm(rn3) == false
 end
