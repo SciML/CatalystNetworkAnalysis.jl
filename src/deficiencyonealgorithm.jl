@@ -11,7 +11,8 @@ function deficiencyonealgorithm(rn::ReactionSystem)
     partitions = generatepartitions(rn)
     reversible = isreversible(rn)
 
-    # iterate over partitions
+    # Iterate over partitions. For each pair of UML partition and confluence vector, 
+    # check if there exists a μ that satisfies the resulting constraints. 
     
     for partition in partitions
         solveconstraints(rn, g, partition) && return true
@@ -24,10 +25,13 @@ end
 function isregular(rn::ReactionSystem) 
     lcs = linkageclasses(rn); tlcs = terminallinkageclasses(rn)
 
-    # Check whether terminal linkage classes are tree-like.
     img = incidencematgraph(rn)
     tlc_graphs = [Graphs.induced_subgraph(img, tlc)[1] for tlc in tlcs] 
 
+    # The three conditions for regularity:
+    #   1) The reaction network is consistente
+    #   2) The reaction network has one terminal LC for each LC
+    #   3) Each TLC is tree-like, i.e. every reaction link y <--> y' is a cut-link
     isconsistent(rn) && (length(lcs) == length(tlcs)) && all(Graphs.is_tree ∘ SimpleGraph, tlc_graphs)
 end
 
@@ -40,8 +44,8 @@ function confluencevector(rn::ReactionSystem)
     # Check the condition for absorptive sets, round g to integer vector? 
     g = g[:, 1]
     g = [isapprox(0, g_i, atol=1e-12) ? 0 : g_i for g_i in g]
-    min = minimum(filter(!=(0), g))
-    g ./= min
+    # min = minimum(filter(!=(0), g))
+    # g ./= min
     tlcs = terminallinkageclasses(rn); lcs = linkageclasses(rn)
 
     absorptive = true
@@ -116,24 +120,33 @@ function solveconstraints(rn::ReactionSystem, confluence::Vector, partition::Arr
     
     # 4) Check that μ is sign-compatible with the stoichiometric subspace.
     @variable(model, coeffs[1:r])
-    @variable(model, isnotzero[1:s], Bin)
+    @variable(model, ispositive[1:s], Bin)
+    @variable(model, isnegative[1:s], Bin)
+    @variable(model, iszero[1:s], Bin)
     @variable(model, isposprod[1:s], Bin)
     const M = 2^16 
 
-    # The constraints are: 
-    #   isnotzero <--> isposprod
+    ### The logical constraints are: 
+    #   iszero <--> ¬isposprod
+    #   ispositive --> isposprod
+    #   isnegative --> isposprod 
+    #   Exactly one of ispositive, iszero, isnegative
+    #
     #   if μ[i] is not zero, then it will be positive or negative, meaning that the
     #   corresponding vector in the stoichiometric subspace will be positive or
     #   negative, meaning that their product at that index will be positive. 
-    @constraint(model, isnotzero .== isposprod)
+    @constraint(model, iszero + isposprod == ones(s))
+    @constraint(model, iszero + ispositive + isnegative == ones(s))
+    @constraint(model, isposprod - isnegative >= zeros(s))
+    @constraint(model, isposprod - ispositive >= zeros(s))
 
-    #   isnotzero == 1 --> μ[i] ≂̸ 0
-    #   TODO: THIS DOES NOT WORK LOL
-    @constraint(model, μ + M * (ones(s) - isnotzero) ≥ ones(s) * eps())
-    @constraint(model, μ - M * (ones(s) - isnotzero) ≤ ones(s) * -eps())
-    #   isnotzero == 0 --> μ[i] = 0
-    @constraint(model, μ + M * isnotzero ≥ zeros(s))
-    @constraint(model, μ - M * isnotzero ≤ zeros(s))
+    #   iszero == 1 --> μ[i] = 0
+    @constraint(model, μ + M * (ones(s) - iszero) ≥ zeros(s))
+    @constraint(model, μ - M * (ones(s) - iszero) ≤ zeros(s))
+    #   isnegative == 1 --> μ[i] < 0
+    @constraint(model, μ - M * (ones(s) - isnegative) ≤ ones(s) * eps())
+    #   ispositive == 1 --> μ[i] > 0
+    @constraint(model, μ + M * (ones(s) - ispositive) ≥ ones(s) * eps())
 
     #   isposprod == 1 --> (S * coeffs)[i] * μ[i] > 0
     @constraint(model, (S*coeffs) .* μ ≥ isposprod * eps())
