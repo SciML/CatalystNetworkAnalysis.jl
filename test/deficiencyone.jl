@@ -93,7 +93,7 @@ let
 
     @test length(part1) == 4 # (3^2+1) / 2 - 1
     @test length(part0) == 1 # (3^2+1) / 2 - 2^2
-    @test length(partn) == 5 # (3^3+1) / 2
+    @test length(partn) == 14 # (3^3+1) / 2
 end
 
 # Testing whether the proper confluence vector orientation is identified
@@ -109,7 +109,14 @@ let
         k10, C --> 0
     end
 
-    C.confluencevector(rn)
+    part = C.generatepartitions(rn)
+    @test length(part) == 13 # (3^3 + 1)/2 - 1
+    g = C.confluencevector(rn)
+    @test C.confluencevector(rn) ≈ [-1., 1., -1., 1., -1., 1., 1., -1., 1., -1.]
+    # U, M, L
+    correctpartition = [[1, 2, 7, 8, 9], [5, 10], [3, 4]]
+    cutdict = C.cutlinkpartitions(rn)
+    C.solveconstraints(rn, g, correctpartition, cutdict)
 end
 
 # Testing whether the deficiency one algorithm returns the correct answer

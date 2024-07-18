@@ -2,7 +2,7 @@ module CatalystNetworkAnalysis
 
 using Catalyst
 using Satisfiability
-using Oscar
+using Oscar, Nemo
 using JuMP, HiGHS
 using LinearAlgebra
 using Graphs

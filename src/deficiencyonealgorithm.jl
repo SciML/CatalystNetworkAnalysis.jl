@@ -10,13 +10,24 @@ function deficiencyonealgorithm(rn::ReactionSystem)
     g = confluencevector(rn)
     partitions = generatepartitions(rn)
     reversible = isreversible(rn)
+    cutidct = cutlinkpartitions(rn)
 
     # Iterate over partitions. For each pair of UML partition and confluence vector, 
     # check if there exists a μ that satisfies the resulting constraints. 
     
+    Y = complexstoichmat(rn); S = netstoichmat(rn)
+    s, c = size(Y); r = size(S, 2)
+    
+    # Initialization
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    M = 1E8; ϵ = 1E-8
+    @variable(model, μ[1:s])
+    @objective(model, Min, 0)
+
     for partition in partitions
-        solveconstraints(rn, g, partition) && return true
-        isreversible(rn) && solveconstraints(rn, -g, partition) && return true
+        solveconstraints(rn, g, partition, cutdict)[2] && return true
+        isreversible(rn) && solveconstraints(rn, -g, partition, cutdict)[2] && return true
     end
     
     return false
@@ -37,15 +48,15 @@ end
 
 function confluencevector(rn::ReactionSystem) 
     Y = complexstoichmat(rn)
-    D = incidencemat(rn)
+    D = incidencemat(rn); nc = size(Y)[2]
 
-    g = D * nullspace(Y*D)
+    numcols, kerYD = nullspace_right_rational(ZZMatrix(Y*D))
+    g = D*Matrix{Int}(kerYD)
+    @assert rank(g) == 1
 
     # Check the condition for absorptive sets, round g to integer vector? 
-    g = g[:, 1]
-    g = [isapprox(0, g_i, atol=1e-12) ? 0 : g_i for g_i in g]
-    # min = minimum(filter(!=(0), g))
-    # g ./= min
+    idx = findfirst(i -> @view(g[:, i]) != zeros(nc), 1:nc) 
+    g = g[:, idx]
     tlcs = terminallinkageclasses(rn); lcs = linkageclasses(rn)
 
     absorptive = true
@@ -61,115 +72,113 @@ function confluencevector(rn::ReactionSystem)
 end
 
 # Given a confluence vector and a UML partition, determine whether there is a vector that is sign-compatible with the stoichiometric subspace. 
-function solveconstraints(rn::ReactionSystem, confluence::Vector, partition::Array) 
-    s, c = size(complexstoichmat(rn)); r = size(netstoichmat(rn), 2)
+function solveconstraints(rn::ReactionSystem, confluence::Vector, partition::Array, cutdict::Dict) 
+    Y = complexstoichmat(rn); S = netstoichmat(rn)
+    s, c = size(Y); r = size(S, 2)
     
+    # Initialization
     model = Model(HiGHS.Optimizer)
     set_silent(model)
-
+    M = 1E8; ϵ = 1E-8
     @variable(model, μ[1:s])
     @objective(model, Min, 0)
 
     # 1) Ensure that y⋅μ = y'⋅μ for all y, y' ∈ M
     @variable(model, n)
-    @constraint(model, Y[:, partition[2]]' * μ == n * ones(length(partition[2])))
+    @constraint(model, M_equal, Y[:, partition[2]]' * μ == n * ones(length(partition[2])))
 
     # 2) Ensure that y⋅μ > y'⋅μ whenever y is higher than y'
-    for (y_u, y_m) in IterTools.product(partition[1], partition[2])
-        @constraint(model, Y[:, y_u]' * μ - Y[:, y_m]' * μ >= eps()) 
-    end
-
-    for (y_u, y_l) in IterTools.product(partition[1], partition[3])
-        @constraint(model, Y[:, y_u]' * μ - Y[:, y_l]' * μ >= eps()) 
-    end
-
-    for (y_m, y_l) in IterTools.product(partition[2], partition[3])
-        @constraint(model, Y[:, y_m]' * μ - Y[:, y_l]' * μ >= eps()) 
-    end
+    @constraint(model, UM[u=partition[1], m=partition[2]], Y[:, u]' * μ - Y[:, m]' * μ ≥ ϵ) 
+    @constraint(model, ML[m=partition[2], l=partition[3]], Y[:, m]' * μ - Y[:, l]' * μ ≥ ϵ) 
 
     # 3) Ensure cut-link condition (internal ordering within TLCs).  
-    tlcs = terminallinkageclasses(rn)
-    for (i, tlc) in enumerate(tlcs)
-        tlc_graph, vmap = Graphs.induced_subgraph(incidencematgraph(rn), tlc)
-        tlc_graph = Graphs.SimpleGraph(tlc_graph)
+    for edge in keys(cutdict)
+        (edge[1] ∈ partition[1] || edge[1] ∈ partition[3]) || continue
+        srcset, dstset = cutdict[edge]
+        sr, ds = edge
+        cutsum = sum(confluence[srcset])
 
-        for edge in Graphs.edges(tlc_graph)
-            sr, ds = Graphs.src(edge), Graphs.dst(edge)
-
-            # For each edge, generate a 2-partition by removing the edge.
-            Graphs.rem_edge!(tlc_graph, sr, ds)
-            ccs = Graphs.connected_components(tlc_graph)
-            complexsets = [vmap[cc] for cc in ccs]
-
-            # Identify which component the source vertex is in
-            srcset = sr ∈ complexsets[1] ? 1 : 2
-
-            # The sign of the sum of the confluence vector's components over the 
-            # set of source complexes and whether y, y' lie in U or L 
-            # determines whether y⋅μ > y'⋅μ or the opposite
-            cutsum = sum(confluence[complexsets[srcset]])
-            if sr ∈ partition[1]
-                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ)*(cutsum) >= ϵ) 
-            elseif src(edge) ∈ partition[3]
-                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ)*(cutsum) <= ϵ) 
-            end
-
-            Graphs.add_edge!(tlc_graph, Graphs.src(edge), Graphs.dst(edge))
+        if cutsum == 0
+            @constraint(model, (Y[:, sr]' * μ == Y[:, ds]' * μ))
+        elseif cutsum > 0
+            sr ∈ partition[1] ? 
+                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≥ ϵ) :
+                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≤ -ϵ) 
+        elseif cutsum < 0
+            sr ∈ partition[3] ? 
+                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≥ ϵ) :
+                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≤ -ϵ) 
         end
     end
-    
+
     # 4) Check that μ is sign-compatible with the stoichiometric subspace.
     @variable(model, coeffs[1:r])
     @variable(model, ispositive[1:s], Bin)
     @variable(model, isnegative[1:s], Bin)
     @variable(model, iszero[1:s], Bin)
-    @variable(model, isposprod[1:s], Bin)
-    const M = 2^16 
+    M = 2^16 
 
     ### The logical constraints are: 
-    #   iszero <--> ¬isposprod
-    #   ispositive --> isposprod
-    #   isnegative --> isposprod 
     #   Exactly one of ispositive, iszero, isnegative
-    #
-    #   if μ[i] is not zero, then it will be positive or negative, meaning that the
-    #   corresponding vector in the stoichiometric subspace will be positive or
-    #   negative, meaning that their product at that index will be positive. 
-    @constraint(model, iszero + isposprod == ones(s))
     @constraint(model, iszero + ispositive + isnegative == ones(s))
-    @constraint(model, isposprod - isnegative >= zeros(s))
-    @constraint(model, isposprod - ispositive >= zeros(s))
 
-    #   iszero == 1 --> μ[i] = 0
+    #   iszero == 1 --> μ[i] = 0 <--> S*coeffs[i] = 0
     @constraint(model, μ + M * (ones(s) - iszero) ≥ zeros(s))
     @constraint(model, μ - M * (ones(s) - iszero) ≤ zeros(s))
-    #   isnegative == 1 --> μ[i] < 0
-    @constraint(model, μ - M * (ones(s) - isnegative) ≤ ones(s) * eps())
-    #   ispositive == 1 --> μ[i] > 0
-    @constraint(model, μ + M * (ones(s) - ispositive) ≥ ones(s) * eps())
-
-    #   isposprod == 1 --> (S * coeffs)[i] * μ[i] > 0
-    @constraint(model, (S*coeffs) .* μ ≥ isposprod * eps())
-    #   isposprod == 0 --> (S * coeffs)[i] * μ[i] <= 0
-    @constraint(model, (S*coeffs) .* μ - M * isposprod ≤ 0)
+    @constraint(model, (S*coeffs) + M * (ones(s) - iszero) ≥ zeros(s))
+    @constraint(model, (S*coeffs) - M * (ones(s) - iszero) ≤ zeros(s))
+    #   isnegative == 1 --> μ[i] < 0 <--> S*coeffs[i] < 0
+    @constraint(model, μ - M * (ones(s) - isnegative) ≤ ones(s) * ϵ)
+    @constraint(model, (S*coeffs) - M * (ones(s) - isnegative) ≤ ones(s) * ϵ)
+    #   ispositive == 1 --> μ[i] > 0 <--> S*coeffs[i] > 0
+    @constraint(model, μ + M * (ones(s) - ispositive) ≥ ones(s) * ϵ)
+    @constraint(model, (S*coeffs) + M * (ones(s) - ispositive) ≥ ones(s) * ϵ)
 
     optimize!(model)
-    is_solved_and_feasible(model) 
+    JuMP.value.(μ), is_solved_and_feasible(model) 
 end
 
+function cutlinkpartitions(rn::ReactionSystem) 
+    tlcs = terminallinkageclasses(rn)
+    cutdict = Dict{Tuple{Int64, Int64}, Vector{Vector{Int64}}}()
+    
+    for (i, tlc) in enumerate(tlcs)
+        tlc_graph, vmap = Graphs.induced_subgraph(incidencematgraph(rn), tlc)
+        tlc_graph = Graphs.SimpleGraph(tlc_graph)
+
+        for edge in Graphs.edges(tlc_graph)
+            # For each edge, generate a 2-partition by removing the edge. TODO: probably a more efficient way to do this. 
+            Graphs.rem_edge!(tlc_graph, edge)
+            ccs = Graphs.connected_components(tlc_graph)
+            complexsets = [vmap[cc] for cc in ccs]
+             
+            # Identify which component the source vertex is in
+            sr, ds = vmap[Graphs.src(edge)], vmap[Graphs.dst(edge)]
+            srcset, dstset = sr ∈ complexsets[1] ? (1,2) : (2,1) 
+            cutdict[(sr, ds)] = [complexsets[srcset], complexsets[dstset]]
+
+            Graphs.add_edge!(tlc_graph, Graphs.src(edge), Graphs.dst(edge))
+        end
+    end
+    cutdict
+end
+
+# Generate partition of the reactive complexes. 
 function generatepartitions(rn::ReactionSystem) 
-    tslcs = terminallinkageclasses(rn)
-    numcomplexes = size(incidencemat(rn))[1]
-    nonterminal_complexes = deleteat!([1:numcomplexes;], vcat(tslcs...))
-    nt = length(tslcs)
-    num_trivial_tlcs = count(tlc -> length(tlc) == 1, tslcs)
+    tlcs = terminallinkageclasses(rn)
+    nontrivial_tlcs = filter(tlc -> length(tlc) != 1, tlcs)
+    num_nontrivial_tlcs = length(nontrivial_tlcs)
+    num_trivial_tlcs = length(tlcs) - num_nontrivial_tlcs 
+
+    num_complexes = size(incidencemat(rn))[1]
+    nonterminal_complexes = deleteat!([1:num_complexes;], vcat(tlcs...))
 
     # In this representation of the UML partition, the indexes of complexes 
     # in each component are stored. 
     partitions_complexes = Array[]
 
-    for i in 0:3^nt - 1
-        buckets = digits(i, base=3, pad=nt)
+    for i in 0:3^num_nontrivial_tlcs - 1
+        buckets = digits(i, base=3, pad=num_nontrivial_tlcs)
         partition = [findall(==(l), buckets) for l in 0:2] 
 
         # We only keep partitions where U is lexicographically less than L,
@@ -184,10 +193,10 @@ function generatepartitions(rn::ReactionSystem)
         # the partition for which both U and L are empty
         num_trivial_tlcs == 1 && (isempty(partition[1]) && isempty(partition[3])) && continue
 
-        U = vcat(tslcs[partition[1]]...)
-        L = vcat(tslcs[partition[2]]...)
-        M = vcat(tslcs[partition[3]]..., nonterminal_complexes)
-        push!(partitions_complexes, [U, L, M])
+        U = reduce(vcat, nontrivial_tlcs[partition[1]], init = Int64[])
+        M = reduce(vcat, [nontrivial_tlcs[partition[2]]..., nonterminal_complexes], init = Int64[])
+        L = reduce(vcat, nontrivial_tlcs[partition[3]], init = Int64[])
+        push!(partitions_complexes, [U, M, L])
         # push!(partitions_tlcs, partition)
     end
     partitions_complexes
