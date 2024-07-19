@@ -4,30 +4,58 @@
     Determine whether a regular deficiency one network will have the ability to admit multiple equilibria and degenerate equilibria. Returns true if so. 
 """
 
-function deficiencyonealgorithm(rn::ReactionSystem) 
+function deficiencyonealgorithm(rn::ReactionSystem; M = 1E8, ϵ = 1E-3)
     (deficiency(rn) == 1 && isregular(rn)) || error("The deficiency one algorithm only works with regular deficiency one networks.")
 
     g = confluencevector(rn)
     partitions = generatepartitions(rn)
     reversible = isreversible(rn)
-    cutidct = cutlinkpartitions(rn)
+    cutdict = cutlinkpartitions(rn)
 
-    # Iterate over partitions. For each pair of UML partition and confluence vector, 
-    # check if there exists a μ that satisfies the resulting constraints. 
-    
     Y = complexstoichmat(rn); S = netstoichmat(rn)
     s, c = size(Y); r = size(S, 2)
     
     # Initialization
-    model = Model(HiGHS.Optimizer)
-    set_silent(model)
-    M = 1E8; ϵ = 1E-8
+    model = Model(HiGHS.Optimizer); set_silent(model)
     @variable(model, μ[1:s])
+    @variable(model, n)
     @objective(model, Min, 0)
 
+    # Ensure that μ is sign-compatible with the stoichiometric subspace.
+    @variable(model, coeffs[1:r])
+    @variable(model, ispositive[1:s], Bin)
+    @variable(model, isnegative[1:s], Bin)
+    @variable(model, iszero[1:s], Bin)
+
+    @constraints(model, begin
+                    iszero + ispositive + isnegative == ones(s) 
+
+                    # iszero = 1 --> μ == 0 <--> S * coeffs == 0
+                    μ + M * (ones(s) - iszero) ≥ zeros(s)
+                    μ - M * (ones(s) - iszero) ≤ zeros(s)
+                    (S*coeffs) + M * (ones(s) - iszero) ≥ zeros(s)
+                    (S*coeffs) - M * (ones(s) - iszero) ≤ zeros(s)
+
+                    # ispositive = 1 --> μ > 0 <--> S * coeffs < 0
+                    μ - M * (ones(s) - isnegative) ≤ ones(s) * ϵ
+                    (S*coeffs) - M * (ones(s) - isnegative) ≤ ones(s) * ϵ
+
+                    # isnegative = 1 --> μ < 0 <--> S * coeffs < 0
+                    μ + M * (ones(s) - ispositive) ≥ ones(s) * ϵ
+                    (S*coeffs) + M * (ones(s) - ispositive) ≥ ones(s) * ϵ
+                 end)
+
+
+    # Iterate over partitions. For each pair of UML partition and confluence vector, 
+    # check if there exists a μ that satisfies the resulting constraints. 
     for partition in partitions
-        solveconstraints(rn, g, partition, cutdict)[2] && return true
-        isreversible(rn) && solveconstraints(rn, -g, partition, cutdict)[2] && return true
+        μ_sol, feasible = solveconstraints(rn, model, g, partition, cutdict, M = M, ϵ = ϵ)
+        feasible && return true
+
+        if reversible
+            μ_sol, feasible = solveconstraints(rn, model, -g, partition, cutdict, M = M, ϵ = ϵ)
+            feasible && return true
+        end
     end
     
     return false
@@ -52,9 +80,7 @@ function confluencevector(rn::ReactionSystem)
 
     numcols, kerYD = nullspace_right_rational(ZZMatrix(Y*D))
     g = D*Matrix{Int}(kerYD)
-    @assert rank(g) == 1
 
-    # Check the condition for absorptive sets, round g to integer vector? 
     idx = findfirst(i -> @view(g[:, i]) != zeros(nc), 1:nc) 
     g = g[:, idx]
     tlcs = terminallinkageclasses(rn); lcs = linkageclasses(rn)
@@ -72,23 +98,17 @@ function confluencevector(rn::ReactionSystem)
 end
 
 # Given a confluence vector and a UML partition, determine whether there is a vector that is sign-compatible with the stoichiometric subspace. 
-function solveconstraints(rn::ReactionSystem, confluence::Vector, partition::Array, cutdict::Dict) 
+
+function solveconstraints(rn::ReactionSystem, model::Model, confluence::Vector, partition::Array, cutdict::Dict; M = 1E8, ϵ = 1E-3) 
     Y = complexstoichmat(rn); S = netstoichmat(rn)
-    s, c = size(Y); r = size(S, 2)
-    
-    # Initialization
-    model = Model(HiGHS.Optimizer)
-    set_silent(model)
-    M = 1E8; ϵ = 1E-8
-    @variable(model, μ[1:s])
-    @objective(model, Min, 0)
+    μ = model[:μ]; n = model[:n]
 
     # 1) Ensure that y⋅μ = y'⋅μ for all y, y' ∈ M
-    @variable(model, n)
     @constraint(model, M_equal, Y[:, partition[2]]' * μ == n * ones(length(partition[2])))
 
     # 2) Ensure that y⋅μ > y'⋅μ whenever y is higher than y'
     @constraint(model, UM[u=partition[1], m=partition[2]], Y[:, u]' * μ - Y[:, m]' * μ ≥ ϵ) 
+    @constraint(model, UL[u=partition[1], l=partition[3]], Y[:, u]' * μ - Y[:, l]' * μ ≥ ϵ) 
     @constraint(model, ML[m=partition[2], l=partition[3]], Y[:, m]' * μ - Y[:, l]' * μ ≥ ϵ) 
 
     # 3) Ensure cut-link condition (internal ordering within TLCs).  
@@ -99,65 +119,80 @@ function solveconstraints(rn::ReactionSystem, confluence::Vector, partition::Arr
         cutsum = sum(confluence[srcset])
 
         if cutsum == 0
-            @constraint(model, (Y[:, sr]' * μ == Y[:, ds]' * μ))
+            @constraint(model, (Y[:, sr]' * μ == Y[:, ds]' * μ), base_name = "Edge $sr-$ds")
         elseif cutsum > 0
             sr ∈ partition[1] ? 
-                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≥ ϵ) :
-                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≤ -ϵ) 
+                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≥ ϵ, base_name = "Edge $sr-$ds") :
+                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≤ -ϵ, base_name = "Edge $sr-$ds")
         elseif cutsum < 0
             sr ∈ partition[3] ? 
-                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≥ ϵ) :
-                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≤ -ϵ) 
+                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≥ ϵ, base_name = "Edge $sr-$ds") : 
+                @constraint(model, (Y[:, sr]' * μ - Y[:, ds]' * μ) ≤ -ϵ, base_name = "Edge $sr-$ds")
+ 
         end
     end
 
-    # 4) Check that μ is sign-compatible with the stoichiometric subspace.
-    @variable(model, coeffs[1:r])
-    @variable(model, ispositive[1:s], Bin)
-    @variable(model, isnegative[1:s], Bin)
-    @variable(model, iszero[1:s], Bin)
-    M = 2^16 
+    optimize!(model); 
+    feasible = is_solved_and_feasible(model); μ_sol = nothing 
 
-    ### The logical constraints are: 
-    #   Exactly one of ispositive, iszero, isnegative
-    @constraint(model, iszero + ispositive + isnegative == ones(s))
+    feasible && begin
+        println("Partition: ", partition)
+        println("Confluence: ", confluence)
 
-    #   iszero == 1 --> μ[i] = 0 <--> S*coeffs[i] = 0
-    @constraint(model, μ + M * (ones(s) - iszero) ≥ zeros(s))
-    @constraint(model, μ - M * (ones(s) - iszero) ≤ zeros(s))
-    @constraint(model, (S*coeffs) + M * (ones(s) - iszero) ≥ zeros(s))
-    @constraint(model, (S*coeffs) - M * (ones(s) - iszero) ≤ zeros(s))
-    #   isnegative == 1 --> μ[i] < 0 <--> S*coeffs[i] < 0
-    @constraint(model, μ - M * (ones(s) - isnegative) ≤ ones(s) * ϵ)
-    @constraint(model, (S*coeffs) - M * (ones(s) - isnegative) ≤ ones(s) * ϵ)
-    #   ispositive == 1 --> μ[i] > 0 <--> S*coeffs[i] > 0
-    @constraint(model, μ + M * (ones(s) - ispositive) ≥ ones(s) * ϵ)
-    @constraint(model, (S*coeffs) + M * (ones(s) - ispositive) ≥ ones(s) * ϵ)
+        μ_sol = JuMP.value.(μ)
+        println(μ_sol)
+        print(model)
+        @assert issigncompatible(S, μ_sol)
+    end
 
-    optimize!(model)
-    JuMP.value.(μ), is_solved_and_feasible(model) 
+    # Reset Model
+    unregister(model, :M_equal); 
+    unregister(model, :UM); unregister(model, :UL); unregister(model, :ML) 
+
+    for con in all_constraints(model, include_variable_in_set_constraints = true)
+        JuMP.name(con) == "" || begin
+            unregister(model, Symbol(JuMP.name(con))) 
+            delete(model, con)
+        end
+    end
+
+    μ_sol, feasible
 end
+
+# Assuming that the graph is regular, generate the set of cut-link partitions
+# created by removing each cut-link connecting two terminal complexes. 
 
 function cutlinkpartitions(rn::ReactionSystem) 
     tlcs = terminallinkageclasses(rn)
-    cutdict = Dict{Tuple{Int64, Int64}, Vector{Vector{Int64}}}()
+    lcs = linkageclasses(rn)
+    inclusions = [findfirst(lc -> issubset(tlc, lc), lcs) for tlc in tlcs]
+
+    img = Graphs.SimpleGraph(incidencematgraph(rn))
+    lc_graphs = [Graphs.induced_subgraph(img, lc) for lc in lcs[inclusions]]
+    tlc_graphs = [Graphs.induced_subgraph(img, tlc) for tlc in tlcs]
     
+    cutdict = Dict{Tuple{Int64, Int64}, Vector{Vector{Int64}}}()
+
     for (i, tlc) in enumerate(tlcs)
-        tlc_graph, vmap = Graphs.induced_subgraph(incidencematgraph(rn), tlc)
-        tlc_graph = Graphs.SimpleGraph(tlc_graph)
+        tlc_graph, tvmap = tlc_graphs[i]
+        lc_graph, lvmap = lc_graphs[i]
+        tlvmap = [findfirst(==(v), lvmap) for v in tvmap] # Get the indexes of tlc in lc
 
         for edge in Graphs.edges(tlc_graph)
+            sr, ds = Graphs.src(edge), Graphs.dst(edge)
+            gsr, gds = tvmap[sr], tvmap[ds]
+            lsr, lds = tlvmap[sr], tlvmap[ds]
+
             # For each edge, generate a 2-partition by removing the edge. TODO: probably a more efficient way to do this. 
-            Graphs.rem_edge!(tlc_graph, edge)
-            ccs = Graphs.connected_components(tlc_graph)
-            complexsets = [vmap[cc] for cc in ccs]
+            Graphs.rem_edge!(lc_graph, lsr, lds)
+            ccs = Graphs.connected_components(lc_graph)
+            complexsets = [lvmap[cc] for cc in ccs]
              
             # Identify which component the source vertex is in
-            sr, ds = vmap[Graphs.src(edge)], vmap[Graphs.dst(edge)]
-            srcset, dstset = sr ∈ complexsets[1] ? (1,2) : (2,1) 
-            cutdict[(sr, ds)] = [complexsets[srcset], complexsets[dstset]]
+            srcset, dstset = gsr ∈ complexsets[1] ? (1,2) : (2,1) 
+            cutdict[(gsr, gds)] = [complexsets[srcset], complexsets[dstset]]
 
-            Graphs.add_edge!(tlc_graph, Graphs.src(edge), Graphs.dst(edge))
+            Graphs.add_edge!(lc_graph, lsr, lds)
         end
     end
     cutdict

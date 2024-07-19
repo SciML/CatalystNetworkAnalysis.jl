@@ -1,6 +1,7 @@
 # Testing whether regularity is properly tested. 
 
 import CatalystNetworkAnalysis as C
+using JuMP, HiGHS
 
 let
     regular_rn = @reaction_network begin
@@ -114,9 +115,20 @@ let
     g = C.confluencevector(rn)
     @test C.confluencevector(rn) ≈ [-1., 1., -1., 1., -1., 1., 1., -1., 1., -1.]
     # U, M, L
+    
     correctpartition = [[1, 2, 7, 8, 9], [5, 10], [3, 4]]
     cutdict = C.cutlinkpartitions(rn)
-    C.solveconstraints(rn, g, correctpartition, cutdict)
+
+    Y = complexstoichmat(rn); S = netstoichmat(rn)
+    s, c = size(Y); r = size(S, 2)
+    
+    # Initialization
+    model = Model(HiGHS.Optimizer); set_silent(model)
+    @variable(model, μ[1:s])
+    @objective(model, Min, 0)
+
+    μ_sol, feasible = C.solveconstraints(rn, model, g, correctpartition, cutdict)
+    @test feasible == true
 end
 
 # Testing whether the deficiency one algorithm returns the correct answer
@@ -141,8 +153,27 @@ let
         (k5, k6), B <--> A
     end
 
+    rn4 = @reaction_network begin
+        k1, A --> 2A
+        k2, A + B --> 2B
+        k3, B --> 0
+    end
+
+    rn5 = @reaction_network begin
+        (k1, k2), A <--> 2A
+        (k3, k4), A + B <--> C
+        (k5, k6), B <--> C
+    end
+
+    rn6 = @reaction_network begin
+        (k1, k2), L + 2R + P <--> 3R + Q
+        (k3, k4), R + 2L + P <--> 3L + Q
+        (k5, k6), P <--> 0
+        (k7, k8), 0 <--> Q
+    end
+    
     @test all(C.isregular, [rn1, rn2, rn3]) == true
-    @test C.deficiencyonealgorithm(rn1) == false
-    @test C.deficiencyonealgorithm(rn2) == true 
-    @test C.deficiencyonealgorithm(rn3) == false
+    @time @test C.deficiencyonealgorithm(rn1) == false
+    @time @test C.deficiencyonealgorithm(rn2) == true 
+    @time @test C.deficiencyonealgorithm(rn3) == false
 end
