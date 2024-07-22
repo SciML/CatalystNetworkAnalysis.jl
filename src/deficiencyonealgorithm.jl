@@ -16,6 +16,7 @@ function deficiencyonealgorithm(rn::ReactionSystem; M = 1E8, ϵ = 1E-3)
     s, c = size(Y); r = size(S, 2)
     
     # Initialization
+    # model = signcompatibilitymodel(S)
     model = Model(HiGHS.Optimizer); set_silent(model)
     @variable(model, μ[1:s])
     @variable(model, n)

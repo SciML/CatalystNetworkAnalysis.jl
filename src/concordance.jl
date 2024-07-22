@@ -1,34 +1,137 @@
-# Check if a vector v is sign-compatible with the image space of a matrix S
-function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64}=Int[], NL = false)
-    n, m = size(S)
+const M::Float64 = 1E4
+const ϵ::Float64 = 1E-1
 
-    if length(v) + length(freeindices) != n
-        error("The number of free signs and assigned signs does not sum to the length of the vector.")
+
+# A network is discordant if there exists a nonzero σ ∈ image(S) and α ∈ ker(S) with the following sign properties: 
+# 1) If α[r] != 0 for some reaction's index r, then the reaction's reactant complex must contain some species s for which sign(σ[s]) == sign(α[r])
+# 2) If α[r] == 0 for some reaction r, either σ[s] == 0 for all s in the reactant complex, 
+# or else there are two species s1, s2 in the reactant complex for which sign(σ[s1]) != sign(σ[s2])
+
+function addconcordanceconstraints(model, rn::ReactionSystem) 
+    α = model[:α]; σ = model[:σ]
+    iszer = model[:σ_iszero]; ispos = model[:σ_ispos]; isneg = model[:σ_isneg]
+    S = netstoichmat(rn); D = incidencemat(rn); Y = complexstoichmat(rn)
+    s, r = size(S)
+
+    @variable(model, allzero[1:r], Bin)
+    @variable(model, allnonneg[1:r], Bin)
+    @variable(model, allnonpos[1:r], Bin)
+    @variable(model, bothposneg[1:r], Bin)
+    @constraint(model, allzero + allnonneg + allnonpos + bothposneg == ones(r))
+
+    for rxn in 1:r
+        s = findfirst(==(-1), @view D[:, rxn])
+        supp = findall(>(0), @view Y[:, s])
+        numr = length(supp)
+
+        # allzero ~ all(==(0), σ[supp]) <--> α[i] == 0        
+        @constraint(model, sum(iszer[supp]) - M*(1 - allzero[rxn]) <= numr)
+        @constraint(model, sum(iszer[supp]) + M*(1 - allzero[rxn]) >= numr)
+        @constraint(model, α[rxn] - M*(1 - allzero[rxn]) <= 0)
+        @constraint(model, α[rxn] + M*(1 - allzero[rxn]) >= 0)
+
+        # allnonneg ~ all(>=(0), σ[supp]) <--> α[i] > 0
+        @constraint(model, sum(isneg[supp]) - M*(1 - allnonneg[rxn]) <= 0)
+        @constraint(model, sum(isneg[supp]) + M*(1 - allnonneg[rxn]) >= 0)
+        @constraint(model, sum(ispos[supp]) + M*(1 - allnonneg[rxn]) >= 1)
+        @constraint(model, α[rxn] + M*(1 - allnonneg[rxn]) >= ϵ)
+
+        # allnonpos ~ all(<=(0), σ[supp]) <--> α[i] < 0
+        @constraint(model, sum(ispos[supp]) - M*(1 - allnonpos[rxn]) <= 0)
+        @constraint(model, sum(ispos[supp]) + M*(1 - allnonpos[rxn]) >= 0)
+        @constraint(model, sum(isneg[supp]) + M*(1 - allnonpos[rxn]) >= 1)
+        @constraint(model, α[rxn] - M*(1 - allnonpos[rxn]) <= -ϵ)
+
+        # bothposneg ~ ∃s1, s2 σ[s1] > 0, σ[s2] < 0
+        @constraint(model, sum(ispos[supp]) + M*(1 - bothposneg[rxn]) >= 1)
+        @constraint(model, sum(isneg[supp]) + M*(1 - bothposneg[rxn]) >= 1)
+    end
+end
+
+# Given a matrix S, return a linear programming model with the constraints that the
+# desired vector μ will be sign-compatible with the image space of S. If the model
+# already exists, add new sign compatibility constraints to the model.  
+
+function signconstraintmodel(S::Matrix; model = nothing, var::String = "", in_subspace = false)
+    (s, r) = size(S)
+
+    model == nothing && begin 
+        model = Model(HiGHS.Optimizer); 
+        set_silent(model)
+        set_optimizer_attribute(model, "mip_feasibility_tolerance", 1e-10)
+        @objective(model, Min, 0)
+    end
+        
+    coeffs = var*"_coeffs"
+    model[Symbol(coeffs)] = @variable(model, [i = 1:r], base_name = coeffs) 
+    model[Symbol(var)] = @variable(model, [i = 1:s], base_name = var)
+
+    if in_subspace
+        @constraint(model, S*model[Symbol(coeffs)] == model[Symbol(var)])
+        return model
     end
 
-    assignedindices = deleteat!(collect(1:n), freeindices)
-    model = Model(HiGHS.Optimizer)
-    set_silent(model)
+    # Ensure that μ is sign-compatible with the stoichiometric subspace.
+    ispos = var*"_ispos"; isneg = var*"_isneg"; iszer = var*"_iszero"
 
-    # Determine which indices must be positive, negative, or zero in the solution to the LP. 
-    zeroindices = assignedindices[findall(==(0), v)]
-    negindices = assignedindices[findall(<(0), v)]
-    posindices = assignedindices[findall(>(0), v)]
+    model[Symbol(ispos)] = @variable(model, [i = 1:s], Bin, base_name = ispos)
+    model[Symbol(isneg)] = @variable(model, [i = 1:s], Bin, base_name = isneg)
+    model[Symbol(iszer)] = @variable(model, [i = 1:s], Bin, base_name = iszer) 
 
-    @variable(model, coeffs[1:m])
-    @objective(model, Min, 0)
+    @constraints(model, begin
+       model[Symbol(iszer)] + model[Symbol(ispos)] + model[Symbol(isneg)] == ones(s) 
+       sum(model[Symbol(iszer)]) <= s - 1 # Ensure that var is not the zero vector.
 
-    if !NL
-        @constraint(model, (S*coeffs)[zeroindices] == zeros(length(zeroindices)))
-        @constraint(model, (S*coeffs)[posindices] >= ones(length(posindices)))
-        @constraint(model, (S*coeffs)[negindices] <= -ones(length(negindices)))
-    else
-        @constraint(model, sign.(S*coeffs) == sign.(v))
-    end
+       # iszero = 1 --> var[i] == 0 <--> (S * coeffs)[i] == 0
+       model[Symbol(var)] + M * (ones(s) - model[Symbol(iszer)]) ≥ zeros(s)
+       model[Symbol(var)] - M * (ones(s) - model[Symbol(iszer)]) ≤ zeros(s)
+       (S*model[Symbol(coeffs)]) + M * (ones(s) - model[Symbol(iszer)]) ≥ zeros(s)
+       (S*model[Symbol(coeffs)]) - M * (ones(s) - model[Symbol(iszer)]) ≤ zeros(s)
+
+       # isnegative = 1 --> var[i] < 0 <--> (S * coeffs)[i] < 0
+       model[Symbol(var)] - M * (ones(s) - model[Symbol(isneg)]) ≤ -ones(s) * ϵ
+       (S*model[Symbol(coeffs)]) - M * (ones(s) - model[Symbol(isneg)]) ≤ -ones(s) * ϵ
+
+       # ispositive = 1 --> var[i] > 0 <--> (S * coeffs)[i] < 0
+       model[Symbol(var)] + M * (ones(s) - model[Symbol(ispos)]) ≥ ones(s) * ϵ
+       (S*model[Symbol(coeffs)]) + M * (ones(s) - model[Symbol(ispos)]) ≥ ones(s) * ϵ
+    end)
+
+    model
+end
+
+
+"""
+    isconcordant(rn::ReactionSystem, atol=1e-12)
+
+    Given a reaction network (and an absolute tolerance for the nullspace matrix below which entries should be zero), test whether the reaction network's graph has a property called concordance. A concordant network will not admit multiple equilibria in any stoichiometric compatibility class. The algorithm for this check follows Haixia Ji's PhD thesis, (Ji, 2011).  
+"""
+
+function isconcordant(rn::ReactionSystem) 
+    S = netstoichmat(rn); (n, r) = size(S)
+
+    numcols, kerS = nullspace_right_rational(ZZMatrix(S))
+    kerS = Matrix{Int}(kerS[:, 1:numcols])
+
+    model = signconstraintmodel(S, var = "σ") 
+    signconstraintmodel(kerS, model = model, var = "α", in_subspace = true)
+    addconcordanceconstraints(model, rn)
 
     optimize!(model)
-    is_solved_and_feasible(model) ? true : false
+    !is_solved_and_feasible(model)
 end
+
+
+
+
+
+
+
+
+
+###############################
+###### OLD IMPLEMENTATION #####
+###############################
 
 # Given a sign pattern for σ, return the partial sign pattern for α and the indices that are free
 function generate_α_signpattern(rn::ReactionSystem, σ::Vector) 
@@ -40,7 +143,8 @@ function generate_α_signpattern(rn::ReactionSystem, σ::Vector)
     for rxn in 1:r 
         supp = findall(<(0), @view S[:, rxn])
 
-        # To be a discordance, α must be 0 whenever all the species in the reactant complex are 0 in σ, and positive (negative) if they are all greater than (less than) or equal to 0. Otherwise, we impose no restrictions.  
+        # To be a discordance, α must be 0 whenever all the species in the reactant complex are 0 in σ, 
+        # and positive (negative) if they are all greater than (less than) or equal to 0. Otherwise, we impose no restrictions.  
         if all(==(0), σ[supp]) 
             push!(α_sp, 0)
         elseif all(>=(0), σ[supp]) 
@@ -55,17 +159,38 @@ function generate_α_signpattern(rn::ReactionSystem, σ::Vector)
     α_sp, freeindices
 end
 
-"""
-    isconcordant(rn::ReactionSystem, atol=1e-12)
+# Check if a vector v is sign-compatible with the image space of a matrix S
+function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64}=Int[], NL = false)
+    n, m = size(S)
 
-    Given a reaction network (and an absolute tolerance for the nullspace matrix below which entries should be zero), test whether the reaction network's graph has a property called concordance. A concordant network will not admit multiple equilibria in any stoichiometric compatibility class. The algorithm for this check follows Haixia Ji's PhD thesis, (Ji, 2011).  
-"""
+    if length(v) + length(freeindices) != n
+        error("The number of free signs and assigned signs does not sum to the length of the vector.") end
 
-function isconcordant(rn::ReactionSystem, atol=1e-12) 
+    assignedindices = deleteat!(collect(1:n), freeindices)
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    # Determine which indices must be positive, negative, or zero in the solution to the LP. 
+    zeroindices = assignedindices[findall(==(0), v)]
+    negindices = assignedindices[findall(<(0), v)]
+    posindices = assignedindices[findall(>(0), v)]
+
+    @variable(model, coeffs[1:m])
+    @objective(model, Min, 0)
+
+    @constraint(model, (S*coeffs)[zeroindices] == zeros(length(zeroindices)))
+    @constraint(model, (S*coeffs)[posindices] >= ones(length(posindices)))
+    @constraint(model, (S*coeffs)[negindices] <= -ones(length(negindices)))
+
+    optimize!(model)
+    is_solved_and_feasible(model) ? true : false
+end
+
+function isconcordant_old(rn::ReactionSystem, atol=1e-12) 
     S = netstoichmat(rn); (n, r) = size(S)
 
-    # Round anything less than a tolerance down to zero
-    kerS = nullspace(S); kerS = map(x-> abs(x) < atol ? 0.0 : x, kerS)
+    numcols, kerS = nullspace_right_rational(ZZMatrix(S))
+    kerS = Matrix{Int}(kerS[:, 1:numcols])
 
     # Check whether there are species with fixed signs of zero. This is the case whenever the species does not appear in the support of any reaction vector. 
     fixedsigns = Int64[];
@@ -74,9 +199,10 @@ function isconcordant(rn::ReactionSystem, atol=1e-12)
     end
     sp = Int64[]
 
-    # A network is discordant if there exists a nonzero σ ∈ image(S) and α ∈ ker(S) with the following sign properties: 
-    # 1) If α[r] != 0 for some reaction's index r, then the reaction's reactant complex must contain some species s for which sign(σ[s]) == sign(α[r])
-    # 2) If α[r] == 0 for some reaction r, either σ[s] == 0 for all s in the reactant complex, or else there are two species s1, s2 in the reactant complex for which sign(σ[s1]) != sign(σ[s2])
+    # Initialize the model. 
+    model = signconstraintmodel(S, var = "σ") 
+    signconstraintmodel(kerS, model = model, var = "α", in_subspace = true)
+    addconcordanceconstraints(model, S)
     
     # We check this by checking every possible sign pattern for σ by traversing a tree. 
     # Move forward until reaching a leaf node or an incompatible sign pattern for σ, then backtrack.  
@@ -85,7 +211,7 @@ function isconcordant(rn::ReactionSystem, atol=1e-12)
         println(sp)
 
         # Check whether the sign pattern for σ is compatible with image(S)
-        if issigncompatible(S, sp, freeindices = collect(length(sp)+1:n))
+        if issigncompatible(S, sp, model, freeindices = collect(length(sp)+1:n))
 
             # If we have reached a leaf node of the tree, we have found a σ sign pattern compatible with image(S).
             if length(sp) == n
@@ -128,7 +254,7 @@ end
 function movebackward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64})
     if signpattern == [] return [] end
 
-    # If we are currently at a fixed sig
+    # If we are currently at a fixed sign
     if length(signpattern) ∈ fixedsigns
         while length(signpattern) ∈ fixedsigns
             pop!(signpattern)
