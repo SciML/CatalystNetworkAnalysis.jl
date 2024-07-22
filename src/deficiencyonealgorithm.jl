@@ -1,10 +1,12 @@
+import CatalystNetworkAnalysis as C
+
 """
     deficiencyonealgorithm(rn::ReactionSystem)
 
     Determine whether a regular deficiency one network will have the ability to admit multiple equilibria and degenerate equilibria. Returns true if so. 
 """
 
-function deficiencyonealgorithm(rn::ReactionSystem; M = 1E8, ϵ = 1E-3)
+function deficiencyonealgorithm(rn::ReactionSystem)
     (deficiency(rn) == 1 && isregular(rn)) || error("The deficiency one algorithm only works with regular deficiency one networks.")
 
     g = confluencevector(rn)
@@ -15,46 +17,18 @@ function deficiencyonealgorithm(rn::ReactionSystem; M = 1E8, ϵ = 1E-3)
     Y = complexstoichmat(rn); S = netstoichmat(rn)
     s, c = size(Y); r = size(S, 2)
     
-    # Initialization
-    # model = signcompatibilitymodel(S)
-    model = Model(HiGHS.Optimizer); set_silent(model)
-    @variable(model, μ[1:s])
+    # Initialize sign compatibility model. 
+    model = C.signconstraintmodel(S, var = "μ")
     @variable(model, n)
-    @objective(model, Min, 0)
-
-    # Ensure that μ is sign-compatible with the stoichiometric subspace.
-    @variable(model, coeffs[1:r])
-    @variable(model, ispositive[1:s], Bin)
-    @variable(model, isnegative[1:s], Bin)
-    @variable(model, iszero[1:s], Bin)
-
-    @constraints(model, begin
-                    iszero + ispositive + isnegative == ones(s) 
-
-                    # iszero = 1 --> μ == 0 <--> S * coeffs == 0
-                    μ + M * (ones(s) - iszero) ≥ zeros(s)
-                    μ - M * (ones(s) - iszero) ≤ zeros(s)
-                    (S*coeffs) + M * (ones(s) - iszero) ≥ zeros(s)
-                    (S*coeffs) - M * (ones(s) - iszero) ≤ zeros(s)
-
-                    # ispositive = 1 --> μ > 0 <--> S * coeffs < 0
-                    μ - M * (ones(s) - isnegative) ≤ ones(s) * ϵ
-                    (S*coeffs) - M * (ones(s) - isnegative) ≤ ones(s) * ϵ
-
-                    # isnegative = 1 --> μ < 0 <--> S * coeffs < 0
-                    μ + M * (ones(s) - ispositive) ≥ ones(s) * ϵ
-                    (S*coeffs) + M * (ones(s) - ispositive) ≥ ones(s) * ϵ
-                 end)
-
 
     # Iterate over partitions. For each pair of UML partition and confluence vector, 
     # check if there exists a μ that satisfies the resulting constraints. 
     for partition in partitions
-        μ_sol, feasible = solveconstraints(rn, model, g, partition, cutdict, M = M, ϵ = ϵ)
+        μ_sol, feasible = solveconstraints(rn, model, g, partition, cutdict)
         feasible && return true
 
         if reversible
-            μ_sol, feasible = solveconstraints(rn, model, -g, partition, cutdict, M = M, ϵ = ϵ)
+            μ_sol, feasible = solveconstraints(rn, model, -g, partition, cutdict)
             feasible && return true
         end
     end
@@ -136,15 +110,15 @@ function solveconstraints(rn::ReactionSystem, model::Model, confluence::Vector, 
     optimize!(model); 
     feasible = is_solved_and_feasible(model); μ_sol = nothing 
 
-    feasible && begin
-        println("Partition: ", partition)
-        println("Confluence: ", confluence)
+    # feasible && begin
+    #     println("Partition: ", partition)
+    #     println("Confluence: ", confluence)
 
-        μ_sol = JuMP.value.(μ)
-        println(μ_sol)
-        print(model)
-        @assert issigncompatible(S, μ_sol)
-    end
+    #     μ_sol = JuMP.value.(μ)
+    #     println(μ_sol)
+    #     print(model)
+    #     @assert issigncompatible(S, μ_sol)
+    # end
 
     # Reset Model
     unregister(model, :M_equal); 

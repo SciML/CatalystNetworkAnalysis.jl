@@ -1,7 +1,3 @@
-const M::Float64 = 1E4
-const ϵ::Float64 = 1E-1
-
-
 # A network is discordant if there exists a nonzero σ ∈ image(S) and α ∈ ker(S) with the following sign properties: 
 # 1) If α[r] != 0 for some reaction's index r, then the reaction's reactant complex must contain some species s for which sign(σ[s]) == sign(α[r])
 # 2) If α[r] == 0 for some reaction r, either σ[s] == 0 for all s in the reactant complex, 

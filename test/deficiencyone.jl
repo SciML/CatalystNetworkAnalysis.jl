@@ -92,9 +92,9 @@ let
     part0 = C.generatepartitions(zero_trivial_tlc)
     partn = C.generatepartitions(multiple_trivial_tlcs)
 
-    @test length(part1) == 4 # (3^2+1) / 2 - 1
+    @test length(part1) == 1 # (3^1+1) / 2 - 1
     @test length(part0) == 1 # (3^2+1) / 2 - 2^2
-    @test length(partn) == 14 # (3^3+1) / 2
+    @test length(partn) == 2 # (3^1+1) / 2
 end
 
 # Testing whether the proper confluence vector orientation is identified
@@ -124,7 +124,7 @@ let
     
     # Initialization
     model = Model(HiGHS.Optimizer); set_silent(model)
-    @variable(model, μ[1:s])
+    @variable(model, μ[1:s]); @variable(model, n)
     @objective(model, Min, 0)
 
     μ_sol, feasible = C.solveconstraints(rn, model, g, correctpartition, cutdict)
@@ -153,18 +153,23 @@ let
         (k5, k6), B <--> A
     end
 
+    # Lotka-Volterra network. Has periodic solutions, but only one equilibrium
+    # per stoichiometric compatibility class. 
     rn4 = @reaction_network begin
         k1, A --> 2A
         k2, A + B --> 2B
         k3, B --> 0
     end
 
+    # Networks that can admit multiple equilibria. 
+    # Edelstein network. 
     rn5 = @reaction_network begin
         (k1, k2), A <--> 2A
         (k3, k4), A + B <--> C
         (k5, k6), B <--> C
     end
 
+    # Chirality pattern formation network 
     rn6 = @reaction_network begin
         (k1, k2), L + 2R + P <--> 3R + Q
         (k3, k4), R + 2L + P <--> 3L + Q
@@ -176,4 +181,7 @@ let
     @time @test C.deficiencyonealgorithm(rn1) == false
     @time @test C.deficiencyonealgorithm(rn2) == true 
     @time @test C.deficiencyonealgorithm(rn3) == false
+    @time @test C.deficiencyonealgorithm(rn4) == false 
+    @time @test C.deficiencyonealgorithm(rn5) == true 
+    @time @test C.deficiencyonealgorithm(rn6) == true 
 end
