@@ -7,7 +7,7 @@ import CatalystNetworkAnalysis as C
 """
 
 function deficiencyonealgorithm(rn::ReactionSystem)
-    (deficiency(rn) == 1 && isregular(rn)) || error("The deficiency one algorithm only works with regular deficiency one networks.")
+    (deficiency(rn) == 1 && isregular(rn)) || error("The deficiency one algorithm only works for regular deficiency one networks.")
 
     g = confluencevector(rn)
     partitions = generatepartitions(rn)
@@ -211,3 +211,22 @@ function generatepartitions(rn::ReactionSystem)
     end
     partitions_complexes
 end
+
+
+
+
+
+
+
+
+
+###################################
+### HIGHER DEFICIENCY ALGORITHM ###
+###################################
+
+function higherdeficiencyalgorithm(rn::ReactionSystem) 
+    # Choose an orientation. 
+
+    
+end
+
