@@ -185,3 +185,24 @@ let
     @time @test C.deficiencyonealgorithm(rn5) == true 
     @time @test C.deficiencyonealgorithm(rn6) == true 
 end
+
+
+### Higher Deficiency Algorithm
+let
+    rn = @reaction_network begin
+        (k1, k2), E1 + S1 <--> E1S1
+        (k3, k4), E1S1 <--> E1 + S2 
+        (k5, k6), E1 + S2 <--> E1S2
+        k7, E1S2 --> E1 + S3
+
+        (g1, g2), E2 + S3 <--> E2S3
+        g3, E2S3 --> E2 + S2 
+        (g5, g6), E2 + S2 <--> E2S2
+        g7, E2S2 --> E2 + S1
+        
+        (f1, f2), E3 + S1 <--> E3S1
+        f3, E3S1 --> E3 + S3 
+        (f5, f6), E3 + S3 <--> E3S3
+        f7, E3S3 --> E3 + S2
+    end
+end

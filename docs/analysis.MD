@@ -7,12 +7,12 @@ This package implements algorithms that check for the existence of these graph s
 The algorithms currently implemented in the package draw from two broad approaches: 
 deficiency theory (developed by Martin Feinberg et al.), which draws explicitly from the graph 
 strcuture of the network, and approaches drawing from algebraic geometry, which analyzes the set 
-of points in concentration space corresponding to the steady states, as well as the algebraic ideal that
-corresponds to this locus. 
+of points in concentration space corresponding to the steady states, as well as the ideal that
+corresponds to this set of points.
 In these docs the algorithms used to determine reaction network properties will be cited. 
 
-The main function of the package is `networksummary(rn::ReactionSystem)`, which collects all the dynamical 
-information that can be learned about the reaction network from its network structure. 
+The main function of the package is `networksummary(rn::ReactionSystem)`, which collects all the 
+dynamical information that can be learned about the reaction network from its network structure. 
 
 There are a few dynamical properties of particular interest that network approaches can shed
 some light on. 
@@ -73,8 +73,8 @@ It is known that the number of steady states that a polynomial ODE system can ad
 above by a quantity called the [mixed volume](). 
 
 Bistability
-Bistability is a key property of reaction networks, since switchlike behavior in biological networks
-is realized through bistability. The network analysis package. 
+Bistability is a very important property of reaction networks, since switchlike behavior in biological 
+networks is realized through bistability. The network analysis package. 
 
 For further stability analysis, please see [this section]() of the main Catalyst documentation.
 

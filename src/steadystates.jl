@@ -1,7 +1,11 @@
 
-function networksummary(rn::ReactionSystem; params = rn.defaults) 
-    @show rn
+mutable struct NetworkSummary
+    Equilibria::Enum
+    ConcentrationRobust::Enum
+    Persistent::Enum
+end
 
+function networksummary(rn::ReactionSystem; params = rn.defaults) 
     # Does the network admit multiple steady states? 
     # Are any of these steady states oscillatory?
     
@@ -9,7 +13,9 @@ function networksummary(rn::ReactionSystem; params = rn.defaults)
     eq = hasuniqueequilibria(rn)
     mv = mixedvolume(rn)
     pers = ispersistent(rn)
+end
 
+function Base.show(ns::NetworkSummary) 
     if eq == :STRUCTURALLY_UNIQUE
         println("This reaction network will have a unique steady-state for every stoichiometric compatibility class, for every choice of rate constants. If the network is deficiency zero, this steady-state will additionally be asymptotically stable.")
     elseif eq == :KINETICALLY_UNIQUE
@@ -35,7 +41,6 @@ function networksummary(rn::ReactionSystem; params = rn.defaults)
         println("Inconclusive whether this reaction network can admit multiple equilibria. One could try obtaining the equilibria from HomotopyContinuation.jl.") 
     end
 
-    ### === ###
     println(); printstyled("Concentration Robustness", bold=true)
     acr = isconcentrationrobust(rn)
 
@@ -46,7 +51,6 @@ function networksummary(rn::ReactionSystem; params = rn.defaults)
         println("This reaction network does not have any species that are concentration-robust.")
     end
 
-    ### === ###
     println(); printstyled("Persistence", bold=true)
     try ispersistent(rn)
         println("This reaction network is persistent. Any species that is initially present in the reaction mixture will not die out (have its concentration reduced to zero.")
@@ -71,7 +75,7 @@ function hasuniqueequilibria(rn::ReactionSystem, params)
     nps = get_networkproperties(rn)
     complexes, D = reactioncomplexes(rn)
     δ = deficiency(rn)
-    haspositiveequilibria(rn) || error("This reaction network does not have the ability to admit positive equilibria for any choice of rate constants.")
+    # haspositiveequilibria(rn) || error("This reaction network does not have the ability to admit positive equilibria for any choice of rate constants.")
     haspositiveequilibria(rn) || return :NO_EQUILIBRIUM
 
     # Deficiency zero theorem 
@@ -88,10 +92,9 @@ function hasuniqueequilibria(rn::ReactionSystem, params)
 
     # Kinetic properties
     (Catalyst.iscomplexbalanced(rn, params) || Catalyst.isdetailedbalance(rn, params)) && return :KINETICALLY_UNIQUE  
-    higherdeficiencyalgorithm(rn) && return :KINETICALLY_MULTIPLE 
+    # higherdeficiencyalgorithm(rn) && return :KINETICALLY_MULTIPLE 
     
     return :POSSIBLY_MULTIPLE
-    error("The network is discordant and high deficiency, but this function currently cannot conclude whether the network has the potential to have multiple equilibria.")
 end
 
 """
@@ -107,14 +110,9 @@ function isconcentrationrobust(rn::ReactionSystem)
     
 end
 
-function hasperiodicsolutions(rn::ReactionSystem) 
-    isconservative(rn) && false
-
-    error("Inconclusive.")
-end
-
 # Some kind of stability analysis functions?
-function haspositiveequilibria(rn::ReactionSystem) 
+function haspositivesteadystates(rn::ReactionSystem) 
+    isweaklyreversible(rn) && return true
     
 end
  
@@ -126,3 +124,11 @@ function mixedvolume(rn::ReactionSystem)
     specs = species(rn)
     Wx_c = conslaws*specs
 end
+
+# Check whether a reaction network has periodic solutions. 
+function hasperiodicsolutions(rn::ReactionSystem) 
+    isconservative(rn) && false
+
+    error("Inconclusive.")
+end
+
