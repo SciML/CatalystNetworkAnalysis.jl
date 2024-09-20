@@ -110,17 +110,6 @@ function solveconstraints(rn::ReactionSystem, model::Model, confluence::Vector, 
     optimize!(model); 
     feasible = is_solved_and_feasible(model); μ_sol = nothing 
 
-    # feasible && begin
-    #     println("Partition: ", partition)
-    #     println("Confluence: ", confluence)
-
-    #     μ_sol = JuMP.value.(μ)
-    #     println(μ_sol)
-    #     print(model)
-    #     @assert issigncompatible(S, μ_sol)
-    # end
-
-    # Reset Model
     unregister(model, :M_equal); 
     unregister(model, :UM); unregister(model, :UL); unregister(model, :ML) 
 
@@ -219,45 +208,4 @@ end
 
 
 
-
-###################################
-### HIGHER DEFICIENCY ALGORITHM ###
-###################################
-
-function higherdeficiencyalgorithm(rn::ReactionSystem) 
-    # Choose an orientation. 
-    S = netstoichmat(rn); rev_idxs = []
-    for i in 1:size(S, 2)-1
-        (S[:, i] == -S[:, i+1]) && push!(rev_idxs, i)
-    end
-    orientation_idxs = deleteat!(collect(1:size(S,2)), rev_idxs .+= 1)
-    L_O = S[:, orientation_idxs];
-    numcols, kerL_O = nullspace_right_rational(ZZMatrix(L_O)); 
-    kerL_O = Matrix{Int64}(kerL_O)[:, 1:numcols]
-
-    # Find the fundamental classes. 
-    eq_classes = Dict()
-    for i in 1:size(kerL_O, 1)
-        row = kerL_O[i, :]; row = div.(row, gcd(row))
-        r_i = orientation_idxs[i]
-        haskey(eq_classes, row) ? push!(eq_classes[row], r_i) : eq_classes[row] = [r_i]
-    end
-
-    # Select representatives. 
-    W = []
-    for rxs in values(eq_classes)
-        irrev_rxs = filter!(r -> r ∉ rev_idxs, rxs)
-        isempty(irrev_rxs) ? push!(W, rxs[1]) : push!(W, irrev_rxs[1])
-    end
-
-    # Reorient. 
-
-    # Build sign constraints. 
-    model = C.signconstraintmodel(S, var = "μ")
-    
-end
-
-function HDAreactionconstraints(rn::ReactionSystem, model) 
-    
-end
 

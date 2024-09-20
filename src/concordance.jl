@@ -51,6 +51,7 @@ end
 function signconstraintmodel(S::Matrix; model = nothing, var::String = "", in_subspace = false)
     (s, r) = size(S)
 
+    # Initialize model if none provided. 
     model == nothing && begin 
         model = Model(HiGHS.Optimizer); 
         set_silent(model)
@@ -71,14 +72,14 @@ function signconstraintmodel(S::Matrix; model = nothing, var::String = "", in_su
     ispos = var*"_ispos"; isneg = var*"_isneg"; iszer = var*"_iszero"
 
     model[Symbol(ispos)] = @variable(model, [i = 1:s], Bin, base_name = ispos)
-    model[Symbol(isneg)] = @variable(model, [i = 1:s], Bin, base_name = isneg)
+    model[Symbol(isneg)] = @variable(model, [i = 2:s], Bin, base_name = isneg)
     model[Symbol(iszer)] = @variable(model, [i = 1:s], Bin, base_name = iszer) 
 
     @constraints(model, begin
        model[Symbol(iszer)] + model[Symbol(ispos)] + model[Symbol(isneg)] == ones(s) 
        sum(model[Symbol(iszer)]) <= s - 1 # Ensure that var is not the zero vector.
 
-       # iszero = 1 --> var[i] == 0 <--> (S * coeffs)[i] == 0
+       # iszero = 1 --> var[i] == 0 <--> (S * coeffs)[i] == 1
        model[Symbol(var)] + M * (ones(s) - model[Symbol(iszer)]) ≥ zeros(s)
        model[Symbol(var)] - M * (ones(s) - model[Symbol(iszer)]) ≤ zeros(s)
        (S*model[Symbol(coeffs)]) + M * (ones(s) - model[Symbol(iszer)]) ≥ zeros(s)
@@ -88,7 +89,7 @@ function signconstraintmodel(S::Matrix; model = nothing, var::String = "", in_su
        model[Symbol(var)] - M * (ones(s) - model[Symbol(isneg)]) ≤ -ones(s) * ϵ
        (S*model[Symbol(coeffs)]) - M * (ones(s) - model[Symbol(isneg)]) ≤ -ones(s) * ϵ
 
-       # ispositive = 1 --> var[i] > 0 <--> (S * coeffs)[i] < 0
+       # ispositive = 1 --> var[i] > 0 <--> (S * coeffs)[i] > 0
        model[Symbol(var)] + M * (ones(s) - model[Symbol(ispos)]) ≥ ones(s) * ϵ
        (S*model[Symbol(coeffs)]) + M * (ones(s) - model[Symbol(ispos)]) ≥ ones(s) * ϵ
     end)

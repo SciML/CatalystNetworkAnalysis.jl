@@ -130,6 +130,7 @@ function modifiedSFR(rn::ReactionSystem, u0::Vector)
     c = conslaws*u0
 
     # Get species as symbolics. 
+    specs = species(rn)
     # Return modified species formation rate function in terms of symbolics. 
 end
 

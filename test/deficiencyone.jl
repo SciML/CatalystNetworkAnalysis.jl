@@ -48,8 +48,7 @@ let
     @test C.isregular(irregular_rn2) == false
 end
 
-# Testing `generatepartitions()`: whether the number of partitions matches 
-# expectations
+# Testing `generatepartitions()`: whether the number of partitions matches expectations
 
 let
     # This reaction network has {A} as a trivial terminal linkage class. 
