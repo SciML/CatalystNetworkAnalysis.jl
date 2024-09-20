@@ -142,6 +142,8 @@ function mixedvolume(rn::ReactionSystem)
     Wx_c = conslaws*specs
 end
 
-function hasuniquesteadystates_SCC(rn::ReactionSystem, c::Vector) 
-    
+function hasuniquesteadystates_SCC(rn::ReactionSystem, u0::Vector) 
+    fn = modifiedSFR(rn, u0)
+    J = Symbolics.jacobian(fn)
+    fn = det(J)
 end
