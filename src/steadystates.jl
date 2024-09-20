@@ -1,3 +1,5 @@
+# Struct summarizing the dynamic information of the reaction network, including its capacity for
+# multiple equilibria, concentration robustness, and persistence. 
 
 mutable struct NetworkSummary
     Equilibria::Enum
@@ -10,9 +12,12 @@ function networksummary(rn::ReactionSystem; params = rn.defaults)
     # Are any of these steady states oscillatory?
     
     # Structural Properties. 
-    eq = hasuniqueequilibria(rn)
-    mv = mixedvolume(rn)
+    eq = hasuniquesteadystates(rn)
+    acr = isconcentrationrobust(rn)
+    # mv = mixedvolume(rn)
     pers = ispersistent(rn)
+
+    NetworkSummary(eq, acr, pers)
 end
 
 function Base.show(ns::NetworkSummary) 
@@ -31,14 +36,6 @@ function Base.show(ns::NetworkSummary)
         println("This reaction network will not have positive steady states, for any choice of rate constants.")
     else
         error("Unrecognized status message for multiple equilibria.")
-    end
-
-
-    if Catalyst.satisfiesdeficiencyzero(rn)
-    elseif !isempty(params)
-        println("Inconclusive whether the system can admit multiple equilibria; will depend on the rate constants. The number of equilibria with this initial condition will not exceed $mv.")
-    else
-        println("Inconclusive whether this reaction network can admit multiple equilibria. One could try obtaining the equilibria from HomotopyContinuation.jl.") 
     end
 
     println(); printstyled("Concentration Robustness", bold=true)
@@ -60,9 +57,9 @@ function Base.show(ns::NetworkSummary)
 end
 
 """
-    hasuniqueequilibria(rn::ReactionSystem)
+    hasuniquesteadystates(rn::ReactionSystem)
 
-    Check whether a reaction network has the capacity to admit multiple equilibria, for some choice of rate constants. Return codes: 
+    Check whether a reaction network has the capacity to admit multiple steady states, for some choice of rate constants. Return codes: 
     - :NO_EQUILIBRIUM - no positive equilibrium for any choice of rate constants
     - :STRUCTURALLY_UNIQUE - only one steady state for every SCC, for every choice of rate constants
     - :KINETICALLY_UNIQUE - only one steady state for every SCC, for this particular set of rate constants
@@ -71,12 +68,12 @@ end
     - :POSSIBLY_MULTIPLE - discordant and/or high deficiency, but inconclusive whether there are system parameters that lead to the existence of an SCC with multiple steady states. 
 """
 
-function hasuniqueequilibria(rn::ReactionSystem, params) 
+function hasuniquesteadystates(rn::ReactionSystem, params) 
     nps = get_networkproperties(rn)
     complexes, D = reactioncomplexes(rn)
     δ = deficiency(rn)
-    # haspositiveequilibria(rn) || error("This reaction network does not have the ability to admit positive equilibria for any choice of rate constants.")
-    haspositiveequilibria(rn) || return :NO_EQUILIBRIUM
+    # haspositivesteadystates(rn) || error("This reaction network does not have the ability to admit positive equilibria for any choice of rate constants.")
+    haspositivesteadystates(rn) || return :NO_EQUILIBRIUM
 
     # Deficiency zero theorem 
     δ == 0 && (isweaklyreversible(rn) ? return :STRUCTURALLY_UNIQUE : return :NO_EQUILIBRIUM)
@@ -113,10 +110,30 @@ end
 # Some kind of stability analysis functions?
 function haspositivesteadystates(rn::ReactionSystem) 
     isweaklyreversible(rn) && return true
-    
 end
  
-# Upper bound on the number of steady states. TODO: get this to work with polynomials in Symbolics
+# Check whether a reaction network has periodic solutions. 
+function hasperiodicsolutions(rn::ReactionSystem) 
+    isconservative(rn) && false
+
+    error("Inconclusive.")
+end
+
+####################################
+# STEADY STATES IN A PARTICULAR STOICHIOMETRIC COMPATIBILITY CLASS #
+####################################
+
+function modifiedSFR(rn::ReactionSystem, u0::Vector) 
+    conslaws = conservationlaws(rn) 
+    d, conslaws = Oscar.rref(conslaws)
+    idxs = Set([findfirst(!=(0), conslaws[i, :]) for i in 1:d])
+    c = conslaws*u0
+
+    # Get species as symbolics. 
+    # Return modified species formation rate function in terms of symbolics. 
+end
+
+# Upper bound on the number of steady states in a particular stoichiometric compatibility class. TODO: get this to work with polynomials in Symbolics
 function mixedvolume(rn::ReactionSystem) 
     conslaws = conservationlaws(rn); (d, s) = size(conslaws)
     idxs = Set([findfirst(!=(0), conslaws[i, :]) for i in 1:d])
@@ -125,10 +142,6 @@ function mixedvolume(rn::ReactionSystem)
     Wx_c = conslaws*specs
 end
 
-# Check whether a reaction network has periodic solutions. 
-function hasperiodicsolutions(rn::ReactionSystem) 
-    isconservative(rn) && false
-
-    error("Inconclusive.")
+function hasuniquesteadystates_SCC(rn::ReactionSystem, c::Vector) 
+    
 end
-
