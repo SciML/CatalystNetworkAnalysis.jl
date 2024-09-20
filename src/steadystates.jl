@@ -62,8 +62,7 @@ end
     Check whether a reaction network has the capacity to admit multiple steady states, for some choice of rate constants. Return codes: 
     - :NO_EQUILIBRIUM - no positive equilibrium for any choice of rate constants
     - :STRUCTURALLY_UNIQUE - only one steady state for every SCC, for every choice of rate constants
-    - :KINETICALLY_UNIQUE - only one steady state for every SCC, for this particular set of rate constants
-    - :DEFINITELY_MULTIPLE - multiple steady states in a certain SCC guaranteed for any choice of rate constants
+    - :STRUCTURALLY_MULTIPLE - multiple steady states in a certain SCC guaranteed for any choice of rate constants
     - :KINETICALLY_MULTIPLE - multiple steady states in a certain SCC guaranteed for certain choices of rate constants
     - :POSSIBLY_MULTIPLE - discordant and/or high deficiency, but inconclusive whether there are system parameters that lead to the existence of an SCC with multiple steady states. 
 """
@@ -76,19 +75,27 @@ function hasuniquesteadystates(rn::ReactionSystem, params)
     haspositivesteadystates(rn) || return :NO_EQUILIBRIUM
 
     # Deficiency zero theorem 
-    δ == 0 && (isweaklyreversible(rn) ? return :STRUCTURALLY_UNIQUE : return :NO_EQUILIBRIUM)
+    δ == 0 && (if isweaklyreversible(rn) 
+                  return :STRUCTURALLY_UNIQUE
+              else
+                  return :NO_EQUILIBRIUM
+              end)
 
     # Deficiency one networks
     Catalyst.satisfiesdeficiencyone(rn) && return :STRUCTURALLY_UNIQUE 
-    δ == 1 && (deficiencyonealgorithm(rn) ? return :KINETICALLY_MULTIPLE : return :STRUCTURALLY_UNIQUE)
+    δ == 1 && (if deficiencyonealgorithm(rn) 
+                   return :KINETICALLY_MULTIPLE 
+               else
+                   return :STRUCTURALLY_UNIQUE
+               end)
 
     # Higher deficiency networks
     concordant = isconcordant(rn)
     concordant && return :STRUCTURALLY_UNIQUE 
-    !concordant && ispositivelydependent(rn) && return :DEFINITELY_MULTIPLE 
+    !concordant && ispositivelydependent(rn) && return :STRUCTURALLY_MULTIPLE
 
     # Kinetic properties
-    (Catalyst.iscomplexbalanced(rn, params) || Catalyst.isdetailedbalance(rn, params)) && return :KINETICALLY_UNIQUE  
+    # (Catalyst.iscomplexbalanced(rn, params) || Catalyst.isdetailedbalance(rn, params)) && return :KINETICALLY_UNIQUE  
     # higherdeficiencyalgorithm(rn) && return :KINETICALLY_MULTIPLE 
     
     return :POSSIBLY_MULTIPLE
@@ -125,26 +132,35 @@ end
 
 function modifiedSFR(rn::ReactionSystem, u0::Vector) 
     conslaws = conservationlaws(rn) 
-    d, conslaws = Oscar.rref(conslaws)
-    idxs = Set([findfirst(!=(0), conslaws[i, :]) for i in 1:d])
+    d, ZZconslaws = Oscar.rref(ZZMatrix(conslaws))
+    considxs = [findfirst(!=(0), conslaws[i, :]) for i in 1:d]
+    conslaws = Matrix{Int64}(ZZconslaws)
     c = conslaws*u0
 
     # Get species as symbolics. 
     specs = species(rn)
-    # Return modified species formation rate function in terms of symbolics. 
+    sfr = Catalyst.assemble_oderhs(rn, specs)
+    println(typeof(sfr))
+    conserved_eqs = conslaws*specs - c
+    println(typeof(conserved_eqs))
+    
+    for (i, rx) in enumerate(considxs)
+        sfr[rx] = conserved_eqs[i]
+    end
+    return sfr
 end
 
-# Upper bound on the number of steady states in a particular stoichiometric compatibility class. TODO: get this to work with polynomials in Symbolics
-function mixedvolume(rn::ReactionSystem) 
-    conslaws = conservationlaws(rn); (d, s) = size(conslaws)
-    idxs = Set([findfirst(!=(0), conslaws[i, :]) for i in 1:d])
-
-    specs = species(rn)
-    Wx_c = conslaws*specs
+# Upper bound on the number of steady states in a particular stoichiometric compatibility class. 
+function mixedvolume(rn::ReactionSystem, u0) 
+    sfr = modifiedSFR(rn, u0)
+    pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()    
+    polysfr = map(eq -> PolyForm(eq, pvar2sym, sym2term).p, sfr)
+    mixed_volume(polysfr)
 end
 
+# TODO
 function hasuniquesteadystates_SCC(rn::ReactionSystem, u0::Vector) 
-    fn = modifiedSFR(rn, u0)
-    J = Symbolics.jacobian(fn)
+    sfr = modifiedSFR(rn, u0)
+    J = Symbolics.jacobian(sfr, species(rn))
     fn = det(J)
 end

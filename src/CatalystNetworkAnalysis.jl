@@ -17,7 +17,9 @@ include("persistence.jl")
 export ispersistent, minimalsiphons, iscritical, isconservative, isconsistent
 include("concordance.jl")
 export isconcordant
-include("deficiencyonealgorithm.jl")
+include("deficiencytheory.jl")
 export deficiencyonealgorithm
+include("steadystates.jl")
+export networksummary, modifiedSFR
 
 end
