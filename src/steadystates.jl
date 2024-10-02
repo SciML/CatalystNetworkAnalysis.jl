@@ -126,9 +126,35 @@ function hasperiodicsolutions(rn::ReactionSystem)
     error("Inconclusive.")
 end
 
-####################################
+####################################################################
 # STEADY STATES IN A PARTICULAR STOICHIOMETRIC COMPATIBILITY CLASS #
-####################################
+####################################################################
+
+
+# Need parameters for the symbolic SFR. 
+function symbolicSFR(rn::ReactionSystem, vars::Vector{T}) where T <: MPolyRingElem
+    rxs = reactions(rn)
+    !all(rx -> ismassaction(rx, rn), rxs) && 
+        error("Symbolic species-formation-rate in terms of polynomial ring elements is currently only supported for mass action systems.")
+
+    spectoidx = Dict(x => i for (i, x) in enumerate(species(rn)))
+    sfr = vars - vars
+
+    for rx in rxs
+        rl = rx.rate
+        for (spec, stoich) in rx.substoich
+        end
+        for (spec, stoich) in rx.netstoich
+            i = spectoidx[spec]
+
+        end
+    end
+end
+
+function symbolicSFR(rn::ReactionSystem; remove_conserved=false) 
+    specs = species(rn)
+    Catalyst.assemble_oderhs(rn, specs, remove_conserved = remove_conserved)
+end
 
 function modifiedSFR(rn::ReactionSystem, u0::Vector) 
     conslaws = conservationlaws(rn) 
@@ -140,9 +166,7 @@ function modifiedSFR(rn::ReactionSystem, u0::Vector)
     # Get species as symbolics. 
     specs = species(rn)
     sfr = Catalyst.assemble_oderhs(rn, specs)
-    println(typeof(sfr))
     conserved_eqs = conslaws*specs - c
-    println(typeof(conserved_eqs))
     
     for (i, rx) in enumerate(considxs)
         sfr[rx] = conserved_eqs[i]
@@ -151,16 +175,27 @@ function modifiedSFR(rn::ReactionSystem, u0::Vector)
 end
 
 # Upper bound on the number of steady states in a particular stoichiometric compatibility class. 
+# TODO: test if this works with non-mass action kinetics. Should error if the rate constants contain function terms. 
 function mixedvolume(rn::ReactionSystem, u0) 
     sfr = modifiedSFR(rn, u0)
     pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()    
     polysfr = map(eq -> PolyForm(eq, pvar2sym, sym2term).p, sfr)
-    mixed_volume(polysfr)
+
+    # Compute mixed volume. Get the species terms. 
+    specvarnames = collect(keys(sym2term))
+    vars = [pvar2sym(specvar) for specvar in specvarnames]
+    supp = support(polysfr, vars)
+    mixed_volume(supp)
 end
 
 # TODO
-function hasuniquesteadystates_SCC(rn::ReactionSystem, u0::Vector) 
+function isinjective(rn::ReactionSystem, u0::Vector) 
+    # check ispermanent(rn)
     sfr = modifiedSFR(rn, u0)
     J = Symbolics.jacobian(sfr, species(rn))
-    fn = det(J)
+    detJ = det(J)
+
+    # Check positivity. 
 end
+
+# Steady States in an SCC. 
