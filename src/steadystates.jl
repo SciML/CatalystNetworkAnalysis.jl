@@ -151,12 +151,19 @@ function symbolicSFR(rn::ReactionSystem, vars::Vector{T}) where T <: MPolyRingEl
     end
 end
 
+"""
+    symbolicSFR(rn::ReactionSystem) 
+    
+    Takes in a reaction network, and returns its vector of steady state polynomials in the desired output type, which can be Symbolic, DynamicPolynomial, or QQPolyElem (for abstract algebra calculations). 
+"""
 function symbolicSFR(rn::ReactionSystem; remove_conserved=false) 
     specs = species(rn)
-    Catalyst.assemble_oderhs(rn, specs, remove_conserved = remove_conserved)
+    sfr = Catalyst.assemble_oderhs(rn, specs, remove_conserved = remove_conserved)
+    
+
 end
 
-function modifiedSFR(rn::ReactionSystem, u0::Vector) 
+function modifiedSFR(rn::ReactionSystem, u0::Vector{Float64}) 
     conslaws = conservationlaws(rn) 
     d, ZZconslaws = Oscar.rref(ZZMatrix(conslaws))
     considxs = [findfirst(!=(0), conslaws[i, :]) for i in 1:d]
