@@ -152,16 +152,58 @@ function symbolicSFR(rn::ReactionSystem, vars::Vector{T}) where T <: MPolyRingEl
 end
 
 """
-    symbolicSFR(rn::ReactionSystem) 
+    SFR(rn::ReactionSystem) 
     
-    Takes in a reaction network, and returns its vector of steady state polynomials in the desired output type, which can be Symbolic, DynamicPolynomial, or QQPolyElem (for abstract algebra calculations). 
+    Takes in a reaction network, and returns a symbolic function of the species formation rate function,
+    which can be used to create steady state polynomials in the desired output type (be it Symbolic, DynamicPolynomial, or QQPolyElem for abstract algebra calculations). 
 """
-function symbolicSFR(rn::ReactionSystem; remove_conserved=false) 
-    specs = species(rn)
-    sfr = Catalyst.assemble_oderhs(rn, specs, remove_conserved = remove_conserved)
+function SFR(rn::ReactionSystem, u0::Dict = Dict(), p::Dict = Dict(); output = :SYM) 
+    specs = species(rn); conslaws = conservationlaws(rn) 
+    sfr = if isempty(u0)
+        Catalyst.assemble_oderhs(rn, specs, remove_conserved = false)
+    else
+        Catalyst.assemble_oderhs(rn, specs, remove_conserved = true)
+    end
     
+    # Substitute initial conditions. 
+    if !isempty(u0) 
+        (length(u0) != length(specs)) && error("Length of initial condition does not equal number of species.")
 
+        u0 = symmap_to_varmap(rn, u0)
+        cons_constants = Catalyst.conservationlaw_constants(rn)
+        Γ_vals = Vector{Float64}()
+        for conseq in cons_constants
+            push!(Γ_vals, substitute(conseq.rhs, u0))
+        end
+        cons_map = Dict(cons.lhs => Γ_val for (cons, Γ_val) in zip(cons_constants, Γ_vals))
+        for i in 1:length(sfr)
+            sfr[i] = substitute(sfr[i], cons_map)
+        end
+    end
+
+    # Substitute parameters.
+    if !isempty(p)
+        p = symmap_to_varmap(rn, p)
+        (length(p) != length(parameters(rn))) && error("Length of parameter assignments does not equal number of parameters.")
+        for i in 1:length(sfr)
+            sfr[i] = substitute(sfr[i], p)
+        end
+    end
+
+    # Generate appropriate output type. 
+    sfr_f, sfr_f! = Symbolics.build_function(sfr, species(rn)...)
+    sfr_f
 end
+
+function SFR(rn::ReactionSystem, u0::Vector, p::Vector) 
+    u0map = Dict([spec => u0_i for (spec, u0_i) in zip(species(rn), u0)])
+    pmap = Dict([param => p_i for (param, p_i) in zip(parameters(rn), p)])
+    SFR_expr(rn, u0map, pmap)
+end
+
+"""
+    Macro that evaluates the SFR expression, using variables of the desired type (DP, Oscar, Symbolics, etc.)
+"""
 
 function modifiedSFR(rn::ReactionSystem, u0::Vector{Float64}) 
     conslaws = conservationlaws(rn) 
