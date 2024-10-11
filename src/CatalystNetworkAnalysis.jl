@@ -20,6 +20,8 @@ export isconcordant
 include("deficiencytheory.jl")
 export deficiencyonealgorithm
 include("steadystates.jl")
-export networksummary, modifiedSFR
+export networksummary, SFR
+include("concentrationrobustness.jl")
+export isconcentrationrobust
 
 end

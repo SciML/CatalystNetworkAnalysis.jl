@@ -21,6 +21,7 @@ function networksummary(rn::ReactionSystem; params = rn.defaults)
 end
 
 function Base.show(ns::NetworkSummary) 
+    printstyled("Number of Steady States", bold=true)
     if eq == :STRUCTURALLY_UNIQUE
         println("This reaction network will have a unique steady-state for every stoichiometric compatibility class, for every choice of rate constants. If the network is deficiency zero, this steady-state will additionally be asymptotically stable.")
     elseif eq == :KINETICALLY_UNIQUE
@@ -105,14 +106,11 @@ end
     isconcentrationrobust(rn::ReactionSystem)
 
     Check whether a reaction network has any concentration-robust species. Return codes: 
-    - :MASS_ACTION_ACR - this species is concentraiton-robust for the given set of rate constants 
-    - :UNCONDITIONAL_ACR - this species is absolutely concentraiton-robust for every choice of rate constants
+    - :MASS_ACTION_ACR - this species is concentration-robust for the given set of rate constants 
+    - :UNCONDITIONAL_ACR - this species is absolutely concentration-robust for every choice of rate constants
     - :INCONCLUSIVE - the algorithm currently cannot decide whether this network has ACR. One could try calling this function with rate constants provided. 
 """
 
-function isconcentrationrobust(rn::ReactionSystem) 
-    
-end
 
 # Some kind of stability analysis functions?
 function haspositivesteadystates(rn::ReactionSystem) 
@@ -168,7 +166,6 @@ function SFR(rn::ReactionSystem, u0::Dict = Dict(), p::Dict = Dict(); output = :
     # Substitute initial conditions. 
     if !isempty(u0) 
         (length(u0) != length(specs)) && error("Length of initial condition does not equal number of species.")
-
         u0 = symmap_to_varmap(rn, u0)
         cons_constants = Catalyst.conservationlaw_constants(rn)
         Γ_vals = Vector{Float64}()
@@ -191,7 +188,8 @@ function SFR(rn::ReactionSystem, u0::Dict = Dict(), p::Dict = Dict(); output = :
     end
 
     # Generate appropriate output type. 
-    sfr_f, sfr_f! = Symbolics.build_function(sfr, species(rn)...)
+    argvec = vcat(species(rn), parameters(rn))
+    sfr_f, sfr_f! = Symbolics.build_function(sfr, argvec...)
     sfr_f
 end
 
