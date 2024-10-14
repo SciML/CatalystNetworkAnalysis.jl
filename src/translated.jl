@@ -18,6 +18,21 @@ function kineticdeficiency(rn::ReactionNetwork)
     
 end
 
-function positiveparameterization(rn::ReactionSystem) 
-    
+"""
+    Given a reaction system, compute the positive parameterization of the system. 
+    1) Using the algorithm for kinetic deficiency zero systems. 
+    2) Algorithm for positive kinetic deficiency systems. 
+    3) Monomial parameterization for systems with toric steady states
+    4) Using Matroids (fall-back), checking subsets of d variables? 
+
+    The output of this function is a symbolic function representing the parameterization. It takes some subset of the species and maps them into a steady state.  
+"""
+function positiveparameterization(rn::ReactionSystem; variable_search = false) 
+    if kineticdeficiency(rn) == 0
+    end
+
+    # κ ∘ τ
+    # Find a spanning forest
+    # Find B such that im B = ker M^T
+    # H is a generalized inverse of M
 end
