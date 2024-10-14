@@ -6,12 +6,14 @@
     - :GLOBAL_ACR - this species is absolutely concentraiton-robust for every choice of rate constants
     - :INCONCLUSIVE - the algorithm currently cannot decide whether this network has ACR. One could try calling this function with rate constants provided. 
     - :NO_ACR - the reaction network does not have ACR. 
+
+    Follows the approach outlined in [Puente et al. 2023](https://arxiv.org/abs/2401.00078).
 """
 
 function isconcentrationrobust(rn::ReactionNetwork; p::Dict{Any, Rational} = Dict()) 
     nps = get_networkproperties(rn)
 
-    # Need RATIONAL values for parameters. 
+    # Convert parameter values to rational values. 
     for param in keys(p)
         p[param] = rationalize(p[param])
     end

@@ -1,9 +1,9 @@
 module CatalystNetworkAnalysis
 
 using Catalyst
-using Satisfiability
-using Oscar, Nemo
-using JuMP, HiGHS
+using Satisfiability # For siphon detection
+using Oscar, Nemo, Hecke # Algebraic functionality
+using JuMP, HiGHS # For concordance and deficiency algorithms
 using LinearAlgebra
 using Graphs
 using IterTools
