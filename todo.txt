@@ -1,0 +1,2 @@
+- Write the Translation tests from Johnston
+- Write the ACR tests from the 2023 paper

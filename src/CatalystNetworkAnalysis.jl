@@ -2,11 +2,12 @@ module CatalystNetworkAnalysis
 
 using Catalyst
 using Satisfiability
-using Oscar, Nemo
+using Oscar, Nemo, Polyhedra
 using JuMP, HiGHS
 using LinearAlgebra
 using Graphs
 using IterTools
+using SparseArrays
 
 import ModelingToolkit as MT
 
@@ -23,5 +24,7 @@ include("steadystates.jl")
 export networksummary, SFR
 include("concentrationrobustness.jl")
 export isconcentrationrobust
+
+include("translated.jl")
 
 end

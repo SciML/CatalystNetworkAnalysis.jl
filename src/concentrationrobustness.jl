@@ -8,7 +8,7 @@
     - :NO_ACR - the reaction network does not have ACR. 
 """
 
-function isconcentrationrobust(rn::ReactionNetwork; p::Dict{Any, Rational} = Dict()) 
+function isconcentrationrobust(rn::ReactionSystem; p::Dict{Any, Rational} = Dict()) 
     nps = get_networkproperties(rn)
 
     # Need RATIONAL values for parameters. 
