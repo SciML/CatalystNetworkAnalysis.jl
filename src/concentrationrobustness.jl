@@ -102,3 +102,8 @@ end
 function denseSampling() 
     
 end
+
+##### DEFICIENCY METHODS
+# These are based on the computation of "robust ratios" between complexes - complexes y, y' such that x^y / x^y' is constant for all positive steady states. 
+#   For def 0 networks, this is true for all networks in the same linkage class
+#   For def 1 networks, this is true for all 

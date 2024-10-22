@@ -5,6 +5,14 @@
  
 # Functionality for translating chemical reaction networks. 
 
+
+struct Translation{T<:Int} 
+    rn::ReactionSystem
+    Y_T::Matrix{T} # The new complex-composition matrix.
+    δ_K::T
+    δ_E::T
+end
+
 """
     translate(rn::ReactionNetwork)
 
@@ -13,10 +21,12 @@
 # Eventually we want this to just construct the lowest-deficiency network, see Johnston/Tonello 2017
 function WRDZ_translation(rn::ReactionSystem) 
     Y_K = complexstoichmat(rn)
-    Y_T = zeros(size(kineticcomplexes))
+    Y_T = zeros(size(Y_K))
+    D = incidencemat(rn)
     e = collect(Graphs.edges(incidencematgraph(rn)))
 
     rr_adj = rrgraph(rn)
+    isnothing(rr_adj) && return Translation(rn, Y_K, deficiency(rn), deficiency(rn))
     r = length(reactions(rn))
     
     P1 = collect(1:r); P2 = Vector{Int64}(); P3 = Vector{Int64}()
@@ -43,7 +53,8 @@ function WRDZ_translation(rn::ReactionSystem)
         isempty(P3) && isempty(P1) && break
     end
 
-    Y_T
+    δ_E = rank(Y_T * nullspace_right_rational(ZZMatrix(Y_T * D)))
+    return Translation(rn, Y_T, δ_K, δ_E)
 end
 
 function rrgraph(rn::ReactionSystem) 
@@ -104,7 +115,7 @@ function rrgraph(rn::ReactionSystem)
     end
 
     optimize!(model)
-    is_solved_and_feasible(model) && return edge
+    is_solved_and_feasible(model) ? return edge : return
 end
 
 # Generate partitions of the reaction-to-reaction graph
@@ -156,14 +167,13 @@ function transitiveclosure_intersect(vectors::Vector{T}) where {T <: Union{Vecto
     cc = Graphs.connected_components(intersectgraph)
 end
 
+function stronglyresolvabletranslation(rn::ReactionSystem) 
+    
+end
 
 # (1) Johnston, M. D.; Müller, S.; Pantea, C. A Deficiency-Based Approach to Parametrizing Positive Equilibria of Biochemical Reaction Systems. arXiv May 23, 2018. http://arxiv.org/abs/1805.09295 (accessed 2024-09-09).
 
 # Generating the parameterization from the above paper. 
-
-# Kinetic deficiency zero reaction networks have positive parameterizations. 
-function kineticdeficiency(rn::ReactionSystem) 
-end
 
 """
     Given a reaction system, compute the positive parameterization of the system. 
@@ -184,3 +194,47 @@ function positiveparameterization(rn::ReactionSystem; variable_search = false)
     # H is a generalized inverse of M
 end
 
+function matrixtree(g::SimpleDiGraph, distmx::Matrix)
+    n = nv(g)
+    if size(distmx) != (n, n)
+        error("Size of distance matrix is incorrect")
+    end
+
+    π = zeros(n)
+
+    if !Graphs.is_connected(g)
+        ccs = Graphs.connected_components(g)
+        for cc in ccs
+            sg, vmap = Graphs.induced_subgraph(g, cc)
+            distmx_s = distmx[cc, cc]
+            π_j = matrixtree(sg, distmx_s)
+            π[cc] = π_j
+        end
+        return π
+    end
+
+    # generate all spanning trees
+    ug = SimpleGraph(SimpleDiGraph(g))
+    trees = collect(Combinatorics.combinations(collect(edges(ug)), n - 1))
+    trees = SimpleGraph.(trees)
+    trees = filter!(t -> isempty(Graphs.cycle_basis(t)), trees)
+
+    # constructed rooted trees for every vertex, compute sum
+    for v in 1:n
+        rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
+        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
+    end
+
+    # sum the contributions
+    return π
+end
+
+function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
+    prod = 1
+    for e in edges(t)
+        s = Graphs.src(e)
+        t = Graphs.dst(e)
+        prod *= distmx[s, t]
+    end
+    prod
+end
