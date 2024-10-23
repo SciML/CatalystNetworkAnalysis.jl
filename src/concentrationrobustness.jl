@@ -10,8 +10,19 @@
     Follows the approach outlined in [Puente et al. 2023](https://arxiv.org/abs/2401.00078).
 """
 
-function isconcentrationrobust(rn::ReactionNetwork; p::Dict{Any, Rational} = Dict()) 
+function isconcentrationrobust(rn::ReactionSystem; p::Dict{Any, Rational} = Dict()) 
     nps = get_networkproperties(rn)
+
+    # Check necessary condition
+    possibly_ACR = false
+    for i in 1:length(species(rn))
+        S, D = CatalystNetworkAnalysis.removespec(rn, i)
+        (deficiency(rn) == CatalystNetworkAnalysis.deficiency(S, D)) && begin
+            possibly_ACR = true
+            break
+        end
+    end
+    (possibly_ACR == false) && return :NO_ACR
 
     # Convert parameter values to rational values. 
     for param in keys(p)

@@ -20,9 +20,11 @@ Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
 PolynomialRoots = "3a141323-8675-5d76-9d11-e1df1406c778"
 SBMLImporter = "210efffb-c3c8-456d-a807-6f55560b12fe"
 Satisfiability = "160ab843-0bc6-4ba4-9585-b7478b70f443"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 
 [compat]
+SparseArrays = "1.11.0"
 julia = "1.6.7"
 
 [extras]

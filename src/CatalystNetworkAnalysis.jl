@@ -6,6 +6,7 @@ using Oscar, Nemo, Hecke # Algebraic functionality
 using JuMP, HiGHS # For concordance and deficiency algorithms
 using LinearAlgebra
 using Graphs
+using SparseArrays
 using IterTools
 
 import ModelingToolkit as MT
@@ -23,5 +24,6 @@ include("steadystates.jl")
 export networksummary, SFR
 include("concentrationrobustness.jl")
 export isconcentrationrobust
+include("utils.jl")
 
 end

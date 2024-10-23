@@ -1,5 +1,6 @@
 const C = CatalystNetworkAnalysis
 
+# Basic examples (section 2) 
 let
     rn = @reaction_network begin
         k1, 2A --> A
@@ -26,7 +27,7 @@ let
     @test C.isconcentrationrobust(rn, p) == :MASS_ACTION_ACR
     # this case has no acr
     p2 = Dict([α => 1.5, β => 2.5])
-    @test C.isconcentrationrobust(rn, p) == :MASS_ACTION_ACR
+    @test C.isconcentrationrobust(rn, p) == :INCONCLUSIVE
     p3 = Dict([α => 1.5, β => 1.6])
     @test C.isconcentrationrobust(rn, p) == :MASS_ACTION_ACR
     p4 = Dict([α => 0.5, β => 2.6])
@@ -55,4 +56,38 @@ let
     end
 
     @test C.isconcentrationrobust(rn) == :GLOBAL_ACR
+end
+
+# Testing the utilities for the necessary condition on absolute concentration robustnesss.
+let
+    rn = @reaction_network begin
+        (k1, k2), 2A <--> B
+        k3, B --> C
+        (k4, k5), B + C <--> D
+        k6, D --> 2B
+        k7, 2B --> A + E
+        k8, A + E --> F
+        (k9, k10), 2B <--> F
+    end
+    @test deficiency(rn) == 1
+
+    S, D = CatalystNetworkAnalysis.removespec(rn, 2)
+    @test S == [-2 2 0 0 0 0 1 -1 0 0;
+                 0 0 1 -1 1 0 0 0 0 0; 
+                 0 0 0 1 -1 -1 0 0 0 0;
+                 0 0 0 0 0 0 1 -1 0 0;
+                 0 0 0 0 0 0 0 1 1 -1]
+
+    @test CatalystNetworkAnalysis.deficiency(S, D) == 0
+
+    S, D = CatalystNetworkAnalysis.removespec(rn, 3)
+    @test S == [-2 2 0 0 0 0 1 -1 0 0;
+                 1 -1 -1 -1 1 2 -2 0 -2 2;
+                 0 0 0 1 -1 -1 0 0 0 0;
+                 0 0 0 0 0 0 1 -1 0 0;
+                 0 0 0 0 0 0 0 1 1 -1]
+
+    @test CatalystNetworkAnalysis.deficiency(S, D) == 1
+
+
 end
