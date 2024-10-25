@@ -1,7 +1,7 @@
 name = "CatalystNetworkAnalysis"
 uuid = "5fe4a9df-d2e2-44a6-8bda-0abe10269b5a"
-authors = ["Vincent Du", "Torkel Loman", "Samuel Isaacson"]
-version = "1.0.0-DEV"
+authors = ["Vincent Du"]
+version = "0.1.0"
 
 [deps]
 Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
@@ -18,17 +18,33 @@ MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
 Nemo = "2edaba10-b0f1-5616-af89-8c11ac63239a"
 Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
 PolynomialRoots = "3a141323-8675-5d76-9d11-e1df1406c778"
-SBMLImporter = "210efffb-c3c8-456d-a807-6f55560b12fe"
 Satisfiability = "160ab843-0bc6-4ba4-9585-b7478b70f443"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 
 [compat]
-SparseArrays = "1.11.0"
-julia = "1.6.7"
+SparseArrays = "1"
+julia = "1.10"
+Catalyst = "14.4.1"
+DynamicPolynomials = "0.6.0"
+Graphs = "1.12.0"
+Hecke = "0.32.3"
+HiGHS = "1.9.3"
+IterTools = "1.10.0"
+JuMP = "1.23.2"
+MixedSubdivisions = "1.1.5"
+ModelingToolkit = "9.46.1"
+MultivariatePolynomials = "0.5.7"
+Nemo = "0.45.7"
+Oscar = "1.1.1"
+PolynomialRoots = "1.0.0"
+Satisfiability = "0.1.1"
+SymbolicUtils = "3.7.2"
+LinearAlgebra = "1.10.0"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+SBMLImporter = "210efffb-c3c8-456d-a807-6f55560b12fe"
 
 [targets]
-test = ["Test"]
+test = ["Test", "SBMLImporter"]
