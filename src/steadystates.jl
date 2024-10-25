@@ -113,17 +113,26 @@ function hasuniquesteadystates(rn::ReactionSystem; p::VarMapType = Dict(), u0::V
 end
 
 # Some kind of stability analysis functions?
+
+"""
+    haspositivesteadystates(rn::ReactionSystem)
+
+    Checks whether the reaction system will have any positive steady states, i.e. steady states for which the concentration of each species is positive. 
+"""
 function haspositivesteadystates(rn::ReactionSystem) 
     subs = subnetworks(rn)
     isweaklyreversible(rn) && return true
     !isconsistent(rn) && return false
 end
  
+"""
+    haspositivesteadystates(rn::ReactionSystem)
+
+    Checks whether the reaction system will have any periodic solutions. 
+"""
 # Check whether a reaction network has periodic solutions. 
 function hasperiodicsolutions(rn::ReactionSystem) 
     isconservative(rn) && false
-
-    error("Inconclusive.")
 end
 
 ####################################################################

@@ -18,7 +18,7 @@ edelstein = @reaction_network begin
 end
 ```
 
-The network summary for this reaction network will be the following:
+The network summary for this reaction network shows the following:
 ```@example intro
 networksummary(edelstein)
 ```
