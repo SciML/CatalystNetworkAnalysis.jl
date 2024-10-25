@@ -23,8 +23,6 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 
 [compat]
-SparseArrays = "1"
-julia = "1.10"
 Catalyst = "14.4.1"
 DynamicPolynomials = "0.6.0"
 Graphs = "1.12.0"
@@ -32,19 +30,23 @@ Hecke = "0.32.3"
 HiGHS = "1.9.3"
 IterTools = "1.10.0"
 JuMP = "1.23.2"
+LinearAlgebra = "1.10.0"
 MixedSubdivisions = "1.1.5"
 ModelingToolkit = "9.46.1"
 MultivariatePolynomials = "0.5.7"
 Nemo = "0.45.7"
 Oscar = "1.1.1"
 PolynomialRoots = "1.0.0"
+SafeTestsets = "0.1.0"
 Satisfiability = "0.1.1"
+SparseArrays = "1"
 SymbolicUtils = "3.7.2"
-LinearAlgebra = "1.10.0"
+julia = "1.10"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 SBMLImporter = "210efffb-c3c8-456d-a807-6f55560b12fe"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 
 [targets]
-test = ["Test", "SBMLImporter"]
+test = ["Test", "SBMLImporter", "SafeTestsets"]
