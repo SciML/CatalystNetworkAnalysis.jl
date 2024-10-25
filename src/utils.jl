@@ -9,7 +9,8 @@ end
 function deficiency(S::SparseMatrixCSC{Int, Int}, D::SparseMatrixCSC{Int, Int})
     n = size(D, 1)
     ss = rank(Matrix(S))
-    l = length(linkageclasses(incidencematgraph(D)))
+    nonnull_rx = findall(!iszero, eachcol(D))
+    l = length(linkageclasses(incidencematgraph(D[:, nonnull_rx])))
 
     return n - l - ss 
 end

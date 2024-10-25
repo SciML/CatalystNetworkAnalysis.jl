@@ -274,6 +274,7 @@ function movebackward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64})
     end
 end
     
+# TODO: Compute concordance based on the speices-reaction graph and extensions. 
 
 # function isstronglyconcordant(rn::ReactionSystem) 
 #     

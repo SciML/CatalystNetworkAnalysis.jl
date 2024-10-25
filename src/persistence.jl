@@ -262,7 +262,7 @@ end
 """
     elementaryfluxmodes(rn::ReactionSystem)
 
-    Given a reaction network, returun the set of elementary flux modes of the reaction network. 
+    Given a reaction network, return the set of elementary flux modes of the reaction network. 
 """
 
 function elementaryfluxmodes(rn::ReactionSystem)

@@ -200,12 +200,3 @@ function generatepartitions(rn::ReactionSystem)
     end
     partitions_complexes
 end
-
-
-
-
-
-
-
-
-

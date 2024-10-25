@@ -1,6 +1,7 @@
+VarMapType = Union{Vector{P}, Dict, Tuple{P}} where P <: Pair
+
 # Struct summarizing the dynamic information of the reaction network, including its capacity for
 # multiple equilibria, concentration robustness, and persistence. 
-
 mutable struct NetworkSummary
     Equilibria::Enum
     ConcentrationRobust::Enum
@@ -8,13 +9,10 @@ mutable struct NetworkSummary
 end
 
 function networksummary(rn::ReactionSystem; params = rn.defaults) 
-    # Does the network admit multiple steady states? 
-    # Are any of these steady states oscillatory?
-    
     # Structural Properties. 
     eq = hasuniquesteadystates(rn)
     acr = isconcentrationrobust(rn)
-    # mv = mixedvolume(rn)
+    mv = mixedvolume(rn)
     pers = ispersistent(rn)
 
     NetworkSummary(eq, acr, pers)
@@ -102,16 +100,6 @@ function hasuniquesteadystates(rn::ReactionSystem, params)
     return :POSSIBLY_MULTIPLE
 end
 
-"""
-    isconcentrationrobust(rn::ReactionSystem)
-
-    Check whether a reaction network has any concentration-robust species. Return codes: 
-    - :MASS_ACTION_ACR - this species is concentration-robust for the given set of rate constants 
-    - :UNCONDITIONAL_ACR - this species is absolutely concentration-robust for every choice of rate constants
-    - :INCONCLUSIVE - the algorithm currently cannot decide whether this network has ACR. One could try calling this function with rate constants provided. 
-"""
-
-
 # Some kind of stability analysis functions?
 function haspositivesteadystates(rn::ReactionSystem) 
     isweaklyreversible(rn) && return true
@@ -129,39 +117,22 @@ end
 ####################################################################
 
 
-# Need parameters for the symbolic SFR. 
-function symbolicSFR(rn::ReactionSystem, vars::Vector{T}) where T <: MPolyRingElem
-    rxs = reactions(rn)
-    !all(rx -> ismassaction(rx, rn), rxs) && 
-        error("Symbolic species-formation-rate in terms of polynomial ring elements is currently only supported for mass action systems.")
-
-    spectoidx = Dict(x => i for (i, x) in enumerate(species(rn)))
-    sfr = vars - vars
-
-    for rx in rxs
-        rl = rx.rate
-        for (spec, stoich) in rx.substoich
-        end
-        for (spec, stoich) in rx.netstoich
-            i = spectoidx[spec]
-
-        end
-    end
-end
-
 """
-    SFR(rn::ReactionSystem) 
+    SFR(rn::ReactionSystem; u0, p) 
     
-    Takes in a reaction network, and returns a symbolic function of the species formation rate function,
-    which can be used to create steady state polynomials in the desired output type (be it Symbolic, DynamicPolynomial, or QQPolyElem for abstract algebra calculations). 
+    Takes in a reaction network, and returns a symbolic function that evaluates the species formation rate function, which can be used to create steady state polynomials in the desired output type (be it Symbolic, DynamicPolynomial, or QQPolyElem for abstract algebra calculations). 
+
+    Optionally takes an initial condition (which is used to compute conservation laws) and a parameter map as arguments. These maps must be a dictionary, vector, or tuple of variable-to-value mappings, e.g. [:k1 => 1., :k2 => 2., ...]
 """
-function SFR(rn::ReactionSystem, u0::Dict = Dict(), p::Dict = Dict(); output = :SYM) 
+function SFR(rn::ReactionSystem; u0::VarMapType = Dict(), p::VarMapType = Dict())
     specs = species(rn); conslaws = conservationlaws(rn) 
     sfr = if isempty(u0)
-        Catalyst.assemble_oderhs(rn, specs, remove_conserved = false)
+        Catalyst.assemble_oderhs(rn, specs, remove_conserved = false, combinatoric_ratelaws = false)
     else
-        Catalyst.assemble_oderhs(rn, specs, remove_conserved = true)
+        Catalyst.assemble_oderhs(rn, specs, remove_conserved = true, combinatoric_ratelaws = false)
     end
+
+    !isa(u0, Dict) && (u0 = Dict(u0)); !isa(p, Dict) && (p = Dict(p))
     
     # Substitute initial conditions. 
     if !isempty(u0) 
@@ -170,11 +141,11 @@ function SFR(rn::ReactionSystem, u0::Dict = Dict(), p::Dict = Dict(); output = :
         cons_constants = Catalyst.conservationlaw_constants(rn)
         Γ_vals = Vector{Float64}()
         for conseq in cons_constants
-            push!(Γ_vals, substitute(conseq.rhs, u0))
+            push!(Γ_vals, Symbolics.substitute(conseq.rhs, u0))
         end
         cons_map = Dict(cons.lhs => Γ_val for (cons, Γ_val) in zip(cons_constants, Γ_vals))
         for i in 1:length(sfr)
-            sfr[i] = substitute(sfr[i], cons_map)
+            sfr[i] = Symbolics.substitute(sfr[i], cons_map)
         end
     end
 
@@ -183,66 +154,44 @@ function SFR(rn::ReactionSystem, u0::Dict = Dict(), p::Dict = Dict(); output = :
         p = symmap_to_varmap(rn, p)
         (length(p) != length(parameters(rn))) && error("Length of parameter assignments does not equal number of parameters.")
         for i in 1:length(sfr)
-            sfr[i] = substitute(sfr[i], p)
+            sfr[i] = Symbolics.substitute(sfr[i], p)
         end
     end
 
     # Generate appropriate output type. 
     argvec = vcat(species(rn), parameters(rn))
-    sfr_f, sfr_f! = Symbolics.build_function(sfr, argvec...)
+    sfr_f, sfr_f! = Symbolics.build_function(sfr, argvec...; expression = Val{false})
     sfr_f
-end
-
-function SFR(rn::ReactionSystem, u0::Vector, p::Vector) 
-    u0map = Dict([spec => u0_i for (spec, u0_i) in zip(species(rn), u0)])
-    pmap = Dict([param => p_i for (param, p_i) in zip(parameters(rn), p)])
-    SFR_expr(rn, u0map, pmap)
 end
 
 """
     Macro that evaluates the SFR expression, using variables of the desired type (DP, Oscar, Symbolics, etc.)
 """
 
-function modifiedSFR(rn::ReactionSystem, u0::Vector{Float64}) 
-    conslaws = conservationlaws(rn) 
-    d, ZZconslaws = Oscar.rref(ZZMatrix(conslaws))
-    considxs = [findfirst(!=(0), conslaws[i, :]) for i in 1:d]
-    conslaws = Matrix{Int64}(ZZconslaws)
-    c = conslaws*u0
-
-    # Get species as symbolics. 
-    specs = species(rn)
-    sfr = Catalyst.assemble_oderhs(rn, specs)
-    conserved_eqs = conslaws*specs - c
-    
-    for (i, rx) in enumerate(considxs)
-        sfr[rx] = conserved_eqs[i]
-    end
-    return sfr
-end
-
 # Upper bound on the number of steady states in a particular stoichiometric compatibility class. 
-# TODO: test if this works with non-mass action kinetics. Should error if the rate constants contain function terms. 
-function mixedvolume(rn::ReactionSystem, u0) 
-    sfr = modifiedSFR(rn, u0)
-    pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()    
-    polysfr = map(eq -> PolyForm(eq, pvar2sym, sym2term).p, sfr)
+function mixedvolume(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
+    u0 = Dict(u0)
+    sfr = eval(SFR(rn; u0 = u0, p = p))
+    (length(u0) != length(species(rn))) && error("The length of the initial condition must equal the number of species in the reaction network.")
+    
+    @polyvar s[1:length(species(rn))]
+    @polyvar k[1:length(parameters(rn))]
 
-    # Compute mixed volume. Get the species terms. 
-    specvarnames = collect(keys(sym2term))
-    vars = [pvar2sym(specvar) for specvar in specvarnames]
-    supp = support(polysfr, vars)
-    mixed_volume(supp)
+    polysfr = sfr(vcat(s, k)...)
+    supp = MixedSubdivisions.support(polysfr, s)
+    MixedSubdivisions.mixed_volume(supp)
 end
 
-# TODO
-function isinjective(rn::ReactionSystem, u0::Vector) 
-    # check ispermanent(rn)
-    sfr = modifiedSFR(rn, u0)
-    J = Symbolics.jacobian(sfr, species(rn))
-    detJ = det(J)
-
-    # Check positivity. 
-end
-
-# Steady States in an SCC. 
+# """
+#     isinjective(rn, u0)
+# """
+# function isinjective(rn::ReactionSystem, u0::Vector) 
+#     # check ispermanent(rn)
+#     sfr = modifiedSFR(rn, u0)
+#     J = Symbolics.jacobian(sfr, species(rn))
+#     detJ = det(J)
+# 
+#     # Check positivity. 
+# end
+# 
+# # Steady States in an SCC. 
