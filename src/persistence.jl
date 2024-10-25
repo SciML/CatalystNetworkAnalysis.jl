@@ -1,7 +1,11 @@
 """
     ispersistent(rs::ReactionSystem)
 
-    Checks if a reaction system is persistent, meaning that none of its species with positive concentration will go extinct (asymptotically approach 0). 
+    Checks if a reaction system is persistent, meaning that none of its species with positive concentration will go extinct (asymptotically approach 0). The possible outputs: 
+    - :PERSISTENT
+    - :NOT_PERSISTENT
+    - :INCONCLUSIVE: The persistence test is inconclusive; this function currently cannot determine whether this network is persistent or not.
+
 """
 
 function ispersistent(rs::ReactionSystem)
@@ -12,14 +16,12 @@ function ispersistent(rs::ReactionSystem)
 
     # Conservative case
     if conservative
-        all(s -> !iscritical(s, S), siphons) && return true
-        !consistent && return false
+        all(s -> !iscritical(s, S), siphons) && return :PERSISTENT
+        !consistent && return :NOT_PERSISTENT
     end
 
-    error("The persistence test is inconclusive; this function currently cannot determine whether this network is persistent or not.")
+    return :INCONCLUSIVE
 end
-
-
 
 ###############
 ### SIPHONS ###
