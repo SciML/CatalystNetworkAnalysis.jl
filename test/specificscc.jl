@@ -14,7 +14,7 @@ let
     t = Catalyst.default_t()
     rx = []; n = 10
     @species X(t) Y(t)
-    @parameters k[1:n, 1:n] = zeros(n, n)
+    @parameters k[1:n, 1:n] 
     for i in 1:n
         for j in 1:n
             i >= j && continue
@@ -26,14 +26,13 @@ let
 
     u0 = [:X => 1., :Y => 2.]
     @test C.mixedvolume(rs, u0) == n - 2
-
 end
 
 # Edelstein network
 let
     rx = []; n = 10
     @species A(t) B(t) D(t)[1:n]
-    @parameters k[1:(4*n+2)] 
+    @parameters k[1:(4*n+2)]
     push!(rx, Reaction(k[1], [A], [A], [1], [2]))
     push!(rx, Reaction(k[2], [A], [A], [2], [1]))
     for i in 1:n
@@ -53,7 +52,7 @@ end
 let
     rx = []; n = 10
     @species S(t)[0:n] X(t)[1:n] Y(t)[1:n] E(t) F(t)
-    @parameters k[1:n, 1:6] = ones(n, 6)
+    @parameters k[1:n, 1:6] 
     for i in 1:n
         push!(rx, Reaction(k[i, 1], [S[i-1], E], [X[i]], [1, 1], [1]))
         push!(rx, Reaction(k[i, 2], [X[i]], [S[i-1], E], [1], [1, 1]))

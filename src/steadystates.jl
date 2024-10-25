@@ -3,55 +3,63 @@ VarMapType = Union{Vector{P}, Dict, Tuple{P}} where P <: Pair
 # Struct summarizing the dynamic information of the reaction network, including its capacity for
 # multiple equilibria, concentration robustness, and persistence. 
 mutable struct NetworkSummary
-    Equilibria::Enum
-    ConcentrationRobust::Enum
-    Persistent::Enum
+    steadystates::Symbol
+    concentrationrobust::Symbol
+    persistent::Symbol
+    mixedvolume::Int 
 end
 
-function networksummary(rn::ReactionSystem; params = rn.defaults) 
+function networksummary(rn::ReactionSystem; p::VarMapType = rn.defaults, u0::VarMapType = Dict()) 
     # Structural Properties. 
-    eq = hasuniquesteadystates(rn)
-    acr = isconcentrationrobust(rn)
-    mv = mixedvolume(rn)
+    eq = hasuniquesteadystates(rn; p = p)
+    acr = isconcentrationrobust(rn; p = p)
+    mv = isempty(u0) ? -1 : mixedvolume(rn, u0)
     pers = ispersistent(rn)
 
-    NetworkSummary(eq, acr, pers)
+    NetworkSummary(eq, acr, pers, mv)
 end
 
 function Base.show(ns::NetworkSummary) 
-    printstyled("Number of Steady States", bold=true)
-    if eq == :STRUCTURALLY_UNIQUE
+    printstyled("Number of Steady States", bold=true); println()
+    if ns.steadystates == :STRUCTURALLY_UNIQUE
         println("This reaction network will have a unique steady-state for every stoichiometric compatibility class, for every choice of rate constants. If the network is deficiency zero, this steady-state will additionally be asymptotically stable.")
-    elseif eq == :KINETICALLY_UNIQUE
+    elseif ns.steadystates == :KINETICALLY_UNIQUE
         println("The number of steady states will depend on the rate constants. For the choice given,")
-    elseif eq == :POSSIBLY_MULTIPLE
-        println("Inconclusive whether the system can admit multiple steady states; will depend on the rate constants. The number of equilibria with this initial condition will not exceed $mv. One could try obtaining the steady states from HomotopyContinuation. Note that the number of steady states depends in general on the choice of initial condition.") 
-    elseif eq == :DEFINITELY_MULTIPLE
+    elseif ns.steadystates == :POSSIBLY_MULTIPLE
+        println("Inconclusive whether the system can admit multiple steady states; will depend on the rate constants. One could try obtaining the steady states from HomotopyContinuation. Note that the number of steady states depends in general on the choice of initial condition.") 
+        if ns.mv >= 0 
+            println("The number of steady states with this initial condition will not exceed $(ns.mv).") 
+        end
+    elseif ns.steadystates == :DEFINITELY_MULTIPLE
         println("This network is guaranteed to have an initial condition for which there are multiple steady states, for any choice of rate constants. Try running a stability analysis.")
-    elseif eq == :KINETICALLY_MULTIPLE
+    elseif ns.steadystates == :KINETICALLY_MULTIPLE
         println("This network is guaranteed to have an initial condition for which there are multiple steady states, for a certain set of rate constants.") # Try running ? for an example set of rate constants. 
 
-    elseif eq == :NO_EQUILIBRIUM
+    elseif ns.steadystates == :NO_EQUILIBRIUM
         println("This reaction network will not have positive steady states, for any choice of rate constants.")
     else
-        error("Unrecognized status message for multiple equilibria.")
+        error("Unrecognized status message for multiple steady states.")
     end
 
-    println(); printstyled("Concentration Robustness", bold=true)
-    acr = isconcentrationrobust(rn)
+    println(); printstyled("Concentration Robustness", bold=true); println()
 
-    if acr == :MASS_ACTION_ACR
-    elseif acr == :GLOBAL_ACR
-    elseif acr == :INCONCLUSIVE
-    else
-        println("This reaction network does not have any species that are concentration-robust.")
+    if ns.concentrationrobust == :MASS_ACTION_ACR
+        println("This reaction network has absolute concentration robustness in at least one species for this set of rate parameters. The concentration of this species will be constant ns.concentrationrobustoss all steady states for the system. To see the indices of species that are concentration robust, please query nps.robustspecies.")
+    elseif ns.concentrationrobust == :GLOBAL_ACR
+        println("This reaction network has absolute concentration robustness in at least one species for any set of rate parameters. The concentration of this species will be constant ns.concentrationrobustoss all steady states for the system. To see the indices of species that are concentration robust, please query nps.robustspecies.")
+    elseif ns.concentrationrobust == :INCONCLUSIVE
+        println("The algorithm currently cannot determine whether this network will have concentration robustness in any species.")
+    elseif ns.concentrationrobust == :NO_ACR
+        println("This reaction network does not possess absolute concentration robustness in any species, for any set of rate constants.")
     end
 
-    println(); printstyled("Persistence", bold=true)
-    try ispersistent(rn)
+    println(); printstyled("Persistence", bold=true); println()
+    if ns.persistent == :PERSISTENT
         println("This reaction network is persistent. Any species that is initially present in the reaction mixture will not die out (have its concentration reduced to zero.")
-    catch error
-        println("It is inconclusive whether this reaction network is persistent.")
+    elseif ns.persistent == :NOT_PERSISTENT
+        println("This reaction network is persistent. It possess steady states that for which one or multiple species will have a concentration of zero.")
+    elseif ns.persistent == :INCONCLUSIVE
+        println("The algorithm currently cannot determine whether this network will have persistence.")
     end
 end
 
@@ -66,15 +74,15 @@ end
     - :POSSIBLY_MULTIPLE - discordant and/or high deficiency, but inconclusive whether there are system parameters that lead to the existence of an SCC with multiple steady states. 
 """
 
-function hasuniquesteadystates(rn::ReactionSystem, params) 
-    nps = get_networkproperties(rn)
+function hasuniquesteadystates(rn::ReactionSystem; p::VarMapType = Dict(), u0::VarMapType = Dict()) 
+    nps = Catalyst.get_networkproperties(rn)
     complexes, D = reactioncomplexes(rn)
-    δ = deficiency(rn)
-    # haspositivesteadystates(rn) || error("This reaction network does not have the ability to admit positive equilibria for any choice of rate constants.")
-    haspositivesteadystates(rn) || return :NO_EQUILIBRIUM
+    δ = Catalyst.deficiency(rn)
+    subs = subnetworks(rn)
+    # haspositivesteadystates(rn) || return :NO_EQUILIBRIUM
 
     # Deficiency zero theorem 
-    δ == 0 && (if isweaklyreversible(rn) 
+    δ == 0 && (if isweaklyreversible(rn, subs) 
                   return :STRUCTURALLY_UNIQUE
               else
                   return :NO_EQUILIBRIUM
@@ -93,16 +101,22 @@ function hasuniquesteadystates(rn::ReactionSystem, params)
     concordant && return :STRUCTURALLY_UNIQUE 
     !concordant && ispositivelydependent(rn) && return :STRUCTURALLY_MULTIPLE
 
-    # Kinetic properties
-    # (Catalyst.iscomplexbalanced(rn, params) || Catalyst.isdetailedbalance(rn, params)) && return :KINETICALLY_UNIQUE  
     # higherdeficiencyalgorithm(rn) && return :KINETICALLY_MULTIPLE 
+    
+    # Kinetic properties
+    if !isempty(p)
+        length(p) != length(parameters(rn)) && error("The length of the parameter map is not equal to the number of parameters in the reaction network.")
+        (Catalyst.iscomplexbalanced(rn, params) || Catalyst.isdetailedbalance(rn, params)) && return :KINETICALLY_UNIQUE  
+    end
     
     return :POSSIBLY_MULTIPLE
 end
 
 # Some kind of stability analysis functions?
 function haspositivesteadystates(rn::ReactionSystem) 
+    subs = subnetworks(rn)
     isweaklyreversible(rn) && return true
+    !isconsistent(rn) && return false
 end
  
 # Check whether a reaction network has periodic solutions. 

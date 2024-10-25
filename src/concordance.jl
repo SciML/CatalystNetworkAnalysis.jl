@@ -72,7 +72,7 @@ function signconstraintmodel(S::Matrix; model = nothing, var::String = "", in_su
     ispos = var*"_ispos"; isneg = var*"_isneg"; iszer = var*"_iszero"
 
     model[Symbol(ispos)] = @variable(model, [i = 1:s], Bin, base_name = ispos)
-    model[Symbol(isneg)] = @variable(model, [i = 2:s], Bin, base_name = isneg)
+    model[Symbol(isneg)] = @variable(model, [i = 1:s], Bin, base_name = isneg)
     model[Symbol(iszer)] = @variable(model, [i = 1:s], Bin, base_name = iszer) 
 
     @constraints(model, begin
