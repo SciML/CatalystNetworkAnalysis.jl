@@ -13,7 +13,7 @@ let
         k12, FS1 --> F + S0
     end
 
-    @test ispersistent(rn) == true
+    @test ispersistent(rn) == :PERSISTENT
 end
 
 let
@@ -37,7 +37,7 @@ let
     end
     
     
-    @test ispersistent(rn) == true
+    @test ispersistent(rn) == :PERSISTENT
 end
 
 let
@@ -60,7 +60,7 @@ let
         k24, MtF --> M + F 
     end
 
-    @test ispersistent(rn) == true
+    @test ispersistent(rn) == :PERSISTENT
 end
 
 # The following example cannot be determined to be persistent from the persistence algorithm.
@@ -73,5 +73,5 @@ let
         k4, D --> 2A + B
     end
 
-    @test_throws ErrorException ispersistent(rn)
+    @test ispersistent(rn) == :INCONCLUSIVE
 end

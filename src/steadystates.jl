@@ -164,15 +164,43 @@ function SFR(rn::ReactionSystem; u0::VarMapType = Dict(), p::VarMapType = Dict()
     sfr_f
 end
 
+function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict()) 
+    conslaws = conservationlaws(rn) 
+    d, ZZconslaws = Oscar.rref(ZZMatrix(conslaws))
+    considxs = [findfirst(!=(0), conslaws[i, :]) for i in 1:d]
+    conslaws = Matrix{Int64}(ZZconslaws)
+
+    sm = speciesmap(rn); u0vec = zeros(length(species(rn)))
+    u0 = symmap_to_varmap(rn, u0)
+    for spec in keys(sm)
+        i = sm[spec]; u0vec[i] = u0[spec]
+    end
+    c = conslaws*u0vec
+
+    # Get species as symbolics. 
+    specs = species(rn)
+    sfr = Catalyst.assemble_oderhs(rn, specs)
+    conserved_eqs = conslaws*specs - c
+     
+    for (i, rx) in enumerate(considxs)
+        sfr[rx] = conserved_eqs[i]
+    end
+
+    argvec = vcat(species(rn), parameters(rn))
+    sfr_f, sfr_f! = Symbolics.build_function(sfr, argvec...; expression = Val{false})
+    sfr_f
+    return sfr_f
+end
+
 """
     Macro that evaluates the SFR expression, using variables of the desired type (DP, Oscar, Symbolics, etc.)
 """
 
 # Upper bound on the number of steady states in a particular stoichiometric compatibility class. 
-function mixedvolume(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
-    u0 = Dict(u0)
-    sfr = eval(SFR(rn; u0 = u0, p = p))
+function mixedvolume(rn::ReactionSystem, u0::VarMapType)
     (length(u0) != length(species(rn))) && error("The length of the initial condition must equal the number of species in the reaction network.")
+    sfr_f = modifiedSFR(rn, u0)
+    sfr = eval(sfr_f)
     
     @polyvar s[1:length(species(rn))]
     @polyvar k[1:length(parameters(rn))]
