@@ -1,5 +1,7 @@
 # Testing whether regularity is properly tested. 
 
+# This file contains tests for the implementation of the deficiency one algorithm and the higher deficiency algorithm. 
+
 import CatalystNetworkAnalysis as C
 using JuMP, HiGHS
 

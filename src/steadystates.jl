@@ -10,6 +10,8 @@ mutable struct NetworkSummary
 end
 
 function networksummary(rn::ReactionSystem; p::VarMapType = rn.defaults, u0::VarMapType = Dict()) 
+    all(r -> ismassaction(rn, rn), reactions(rn)) || error("The network summary analysis currently only works for mass-action networks with integer coefficients.")
+
     # Structural Properties. 
     eq = hasuniquesteadystates(rn; p = p)
     acr = isconcentrationrobust(rn; p = p)
@@ -75,6 +77,7 @@ end
 """
 
 function hasuniquesteadystates(rn::ReactionSystem; p::VarMapType = Dict(), u0::VarMapType = Dict()) 
+
     nps = Catalyst.get_networkproperties(rn)
     complexes, D = reactioncomplexes(rn)
     δ = Catalyst.deficiency(rn)

@@ -1,5 +1,6 @@
 using CatalystNetworkAnalysis
 using SafeTestsets, Test
+using UnPack, SBMLImporter
 
 @testset "CatalystNetworkAnalysis.jl" begin
     # Write your tests here.

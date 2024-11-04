@@ -1,0 +1,819 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<sbml xmlns="http://www.sbml.org/sbml/level2/version4" level="2" version="4">
+  <model id="DeBoeck2021___Modular_approach_to_modeling_the_cell_cycle__5_ODE_model_with_3_bistable_switches" metaid="COPASI0" name="DeBoeck2021 - Modular approach to modeling the cell cycle, 5 ODE model with 3 bistable switches">
+    <notes>
+      <body xmlns="http://www.w3.org/1999/xhtml">
+        <p>Model of the mammalian cell cycle as a chain of bistable switches. 
+There are three bistable responses: response of E2F to Cyclin D, of Cdk1 to Cyclin B and of APC/C to Cdk1 activity. 
+The model for the given parameters admits a complex limit cycle characterized by transitions through the bistable switches. 
+The bistable responses are modeled directly using a functional motif, not through biochemical interactions. This modular approach allows to easily modify the properties of the bistable response curves. This version of the model correspond to Fig. 7 in the publication. 
+We illustrated how, using this model, the system can be coupled to the circadian clock, by periodically modifying thresholds of one of the switches. We also illustrated how to implement the restriction point checkpoint using this model (those applications are not coded in the associated sbml file and can be seen in Fig. 8 of the publication). 
+
+A related, simpler model that illustrates the bistable motif is MODEL2212060001</p>
+      </body>
+    </notes>
+    <annotation>
+      <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+        <rdf:Description rdf:about="#COPASI0">
+	<dc:creator>
+	<rdf:Bag>
+	<rdf:li rdf:parseType="Resource">
+	<vCard:N rdf:parseType="Resource">
+	<vCard:Family>Tiwari</vCard:Family>
+	<vCard:Given>Krishna</vCard:Given>
+	</vCard:N>
+	<vCard:EMAIL>ktiwari@ebi.ac.uk</vCard:EMAIL>
+	<vCard:ORG rdf:parseType="Resource">
+	<vCard:Orgname>EMBL-EBI</vCard:Orgname>
+	</vCard:ORG>
+	</rdf:li>
+	</rdf:Bag>
+	</dc:creator>
+	<dcterms:created rdf:parseType="Resource">
+	<dcterms:W3CDTF>2023-06-23T10:24:31Z</dcterms:W3CDTF>
+	</dcterms:created>
+	<dcterms:modified rdf:parseType="Resource">
+	<dcterms:W3CDTF>2023-06-23T10:24:31Z</dcterms:W3CDTF>
+	</dcterms:modified>
+	<bqmodel:hasProperty>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/mamo/MAMO_0000045"/>
+	</rdf:Bag>
+	</bqmodel:hasProperty>
+	<bqmodel:isDescribedBy>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/doi:10.1371/journal.pcbi.1009008"/>
+	</rdf:Bag>
+	</bqmodel:isDescribedBy>
+	<bqbiol:occursIn>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/ncit/C12508"/>
+	</rdf:Bag>
+	</bqbiol:occursIn>
+	<bqbiol:isDescribedBy>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/pubmed/34379640"/>
+	</rdf:Bag>
+	</bqbiol:isDescribedBy>
+	<bqbiol:hasProperty>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/ncit/C19987"/>
+	<rdf:li rdf:resource="http://identifiers.org/go/GO:0051301"/>
+	<rdf:li rdf:resource="http://identifiers.org/go/GO:0007049"/>
+	<rdf:li rdf:resource="http://identifiers.org/mamo/MAMO_0000045"/>
+	</rdf:Bag>
+	</bqbiol:hasProperty>
+	<bqmodel:is>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/biomodels.db/MODEL2212060002"/>
+	<rdf:li rdf:resource="http://identifiers.org/biomodels.db/BIOMD0000001080"/>
+	</rdf:Bag>
+	</bqmodel:is>
+	</rdf:Description>
+	
+	
+	
+      </rdf:RDF>
+      <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+        <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#">
+          <rdf:Description rdf:about="#COPASI0">
+            <bqbiol:hasProperty rdf:resource="urn:miriam:go.ref:GO:0007049"/>
+            <bqbiol:hasProperty rdf:resource="urn:miriam:go.ref:GO:0051301"/>
+            <bqbiol:hasProperty rdf:resource="urn:miriam:ncit:C19987"/>
+            <bqbiol:hasProperty>
+              <rdf:Bag>
+                <rdf:li rdf:resource="http://identifiers.org/mamo/MAMO_0000045"/>
+              </rdf:Bag>
+            </bqbiol:hasProperty>
+            <dcterms:bibliographicCitation>
+              <rdf:Description>
+                <CopasiMT:isDescribedBy rdf:resource="urn:miriam:pubmed:34379640"/>
+              </rdf:Description>
+            </dcterms:bibliographicCitation>
+            <dcterms:created>
+              <rdf:Description>
+                <dcterms:W3CDTF>2023-06-23T10:24:31Z</dcterms:W3CDTF>
+              </rdf:Description>
+            </dcterms:created>
+            <dcterms:creator>
+              <rdf:Description>
+                <vCard:EMAIL>ktiwari@ebi.ac.uk</vCard:EMAIL>
+                <vCard:N>
+                  <rdf:Description>
+                    <vCard:Family>Tiwari</vCard:Family>
+                    <vCard:Given>Krishna</vCard:Given>
+                  </rdf:Description>
+                </vCard:N>
+                <vCard:ORG>
+                  <rdf:Description>
+                    <vCard:Orgname>EMBL-EBI</vCard:Orgname>
+                  </rdf:Description>
+                </vCard:ORG>
+              </rdf:Description>
+            </dcterms:creator>
+            <CopasiMT:is rdf:resource="urn:miriam:biomodels.db:MODEL2212060002"/>
+            <CopasiMT:occursIn rdf:resource="urn:miriam:ncit:C12508"/>
+          </rdf:Description>
+        </rdf:RDF>
+      </copasi:COPASI>
+    </annotation>
+      <listOfFunctionDefinitions>
+      <functionDefinition id="Function_for__J1" name="Function for _J1">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <lambda>
+            <bvar>
+              <ci> APC </ci>
+            </bvar>
+            <bvar>
+              <ci> CycD </ci>
+            </bvar>
+            <bvar>
+              <ci> d_deg </ci>
+            </bvar>
+            <bvar>
+              <ci> default_compartment </ci>
+            </bvar>
+            <bvar>
+              <ci> delta_d </ci>
+            </bvar>
+            <apply>
+              <divide/>
+              <apply>
+                <times/>
+                <ci> d_deg </ci>
+                <ci> CycD </ci>
+                <apply>
+                  <plus/>
+                  <ci> APC </ci>
+                  <ci> delta_d </ci>
+                </apply>
+              </apply>
+              <ci> default_compartment </ci>
+            </apply>
+          </lambda>
+        </math>
+            </functionDefinition>
+      <functionDefinition id="xi" name="xi">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <lambda>
+            <bvar>
+              <ci> x </ci>
+            </bvar>
+            <bvar>
+              <ci> alpha </ci>
+            </bvar>
+            <bvar>
+              <ci> r </ci>
+            </bvar>
+            <apply>
+              <plus/>
+              <cn> 1 </cn>
+              <apply>
+                <times/>
+                <ci> alpha </ci>
+                <ci> x </ci>
+                <apply>
+                  <minus/>
+                  <ci> x </ci>
+                  <cn> 1 </cn>
+                </apply>
+                <apply>
+                  <minus/>
+                  <ci> x </ci>
+                  <ci> r </ci>
+                </apply>
+              </apply>
+            </apply>
+          </lambda>
+        </math>
+            </functionDefinition>
+      <functionDefinition id="Function_for__J2" name="Function for _J2">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <lambda>
+            <bvar>
+              <ci> E2F </ci>
+            </bvar>
+            <bvar>
+              <ci> b_syn </ci>
+            </bvar>
+            <bvar>
+              <ci> default_compartment </ci>
+            </bvar>
+            <apply>
+              <divide/>
+              <apply>
+                <times/>
+                <ci> b_syn </ci>
+                <ci> E2F </ci>
+              </apply>
+              <ci> default_compartment </ci>
+            </apply>
+          </lambda>
+        </math>
+            </functionDefinition>
+      <functionDefinition id="Function_for__J3" name="Function for _J3">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <lambda>
+            <bvar>
+              <ci> APC </ci>
+            </bvar>
+            <bvar>
+              <ci> CycB </ci>
+            </bvar>
+            <bvar>
+              <ci> b_deg </ci>
+            </bvar>
+            <bvar>
+              <ci> default_compartment </ci>
+            </bvar>
+            <bvar>
+              <ci> delta_b </ci>
+            </bvar>
+            <apply>
+              <divide/>
+              <apply>
+                <times/>
+                <ci> b_deg </ci>
+                <ci> CycB </ci>
+                <apply>
+                  <plus/>
+                  <ci> APC </ci>
+                  <ci> delta_b </ci>
+                </apply>
+              </apply>
+              <ci> default_compartment </ci>
+            </apply>
+          </lambda>
+        </math>
+            </functionDefinition>
+      <functionDefinition id="Function_for__J0" name="Function for _J0">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <lambda>
+            <bvar>
+              <ci> d_syn </ci>
+            </bvar>
+            <bvar>
+              <ci> default_compartment </ci>
+            </bvar>
+            <apply>
+              <divide/>
+              <ci> d_syn </ci>
+              <ci> default_compartment </ci>
+            </apply>
+          </lambda>
+        </math>
+            </functionDefinition>
+    </listOfFunctionDefinitions>
+    <listOfUnitDefinitions>
+      <unitDefinition id="length" name="length">
+        <listOfUnits>
+          <unit exponent="1" kind="metre" multiplier="1" scale="0"/>
+        </listOfUnits>
+      </unitDefinition>
+      <unitDefinition id="area" name="area">
+        <listOfUnits>
+          <unit exponent="2" kind="metre" multiplier="1" scale="0"/>
+        </listOfUnits>
+      </unitDefinition>
+      <unitDefinition id="volume" name="volume">
+        <listOfUnits>
+          <unit exponent="1" kind="litre" multiplier="1" scale="0"/>
+        </listOfUnits>
+      </unitDefinition>
+      <unitDefinition id="time" name="time">
+        <listOfUnits>
+          <unit exponent="1" kind="second" multiplier="1" scale="0"/>
+        </listOfUnits>
+      </unitDefinition>
+      <unitDefinition id="substance" name="substance">
+        <listOfUnits>
+          <unit exponent="1" kind="mole" multiplier="1" scale="0"/>
+        </listOfUnits>
+      </unitDefinition>
+    </listOfUnitDefinitions>
+    <listOfCompartments>
+      <compartment constant="true" id="default_compartment" metaid="COPASI1" name="default_compartment" sboTerm="SBO:0000410" size="1" spatialDimensions="3">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI1">
+	<bqbiol:is>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/SBO:0000410"/>
+	</rdf:Bag>
+	</bqbiol:is>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI1">
+                <CopasiMT:is rdf:resource="urn:miriam:sbo:SBO:0000410"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+            </compartment>
+    </listOfCompartments>
+    <listOfSpecies>
+      <species boundaryCondition="false" compartment="default_compartment" constant="false" id="CycD" initialConcentration="69.6" metaid="COPASI2" name="CycD">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI2">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/P24385"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI2">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:go.ref:P24385"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+            </species>
+      <species boundaryCondition="false" compartment="default_compartment" constant="false" id="CycB" initialConcentration="32.9" metaid="COPASI3" name="CycB">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI3">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/uniprot/P14635"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI3">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:uniprot:P14635"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+            </species>
+    </listOfSpecies>
+    <listOfParameters>
+      <parameter constant="true" id="d_syn" name="d_syn" value="0.15"/>
+      <parameter constant="true" id="d_deg" name="d_deg" value="0.009"/>
+      <parameter constant="false" id="APC" metaid="COPASI4" name="APC" value="1E-12">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI4">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/go/GO:0005680"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI4">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:go.ref:GO:0005680"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+            </parameter>
+      <parameter constant="true" id="delta_d" name="delta_d" value="0.05"/>
+      <parameter constant="true" id="b_syn" name="b_syn" value="0.03"/>
+      <parameter constant="false" id="E2F" metaid="COPASI5" name="E2F" value="1E-12">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI5">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/uniprot/Q01094"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI5">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:uniprot:Q01094"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+            </parameter>
+      <parameter constant="true" id="b_deg" name="b_deg" value="0.003"/>
+      <parameter constant="true" id="delta_b" name="delta_b" value="0.05"/>
+      <parameter constant="true" id="epsilon_e2f" name="epsilon_e2f" value="0.01"/>
+      <parameter constant="true" id="n" name="n" value="15"/>
+      <parameter constant="true" id="K_cyc_e2f" name="K_cyc_e2f" value="120"/>
+      <parameter constant="true" id="alpha_e2f" name="alpha_e2f" value="5"/>
+      <parameter constant="true" id="r" name="r" value="0.5"/>
+      <parameter constant="false" id="Cdk" metaid="COPASI6" name="Cdk" value="0.8">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI6">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/uniprot/P06493"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI6">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:uniprot:P06493"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+            </parameter>
+      <parameter constant="true" id="epsilon_cdk" name="epsilon_cdk" value="0.01"/>
+      <parameter constant="true" id="K_cyc_cdk" name="K_cyc_cdk" value="40"/>
+      <parameter constant="true" id="alpha_cdk" name="alpha_cdk" value="5"/>
+      <parameter constant="true" id="epsilon_apc" name="epsilon_apc" value="0.01"/>
+      <parameter constant="true" id="K_cdk_apc" name="K_cdk_apc" value="20"/>
+      <parameter constant="true" id="alpha_apc" name="alpha_apc" value="5"/>
+      <parameter constant="false" id="CycD_max" name="CycD_max" value="0.374717346828901"/>
+      <parameter constant="false" id="CycB_max" name="CycB_max" value="0.716463414634146"/>
+      <parameter constant="false" id="APC_max" name="APC_max" value="1.000008000064E-12"/>
+      <parameter constant="false" id="E2F_max" name="E2F_max" value="1.00135583580168E-12"/>
+      <parameter constant="false" id="Cdk_max" name="Cdk_max" value="0.0181818181818182"/>
+    </listOfParameters>
+    <listOfRules>
+      <assignmentRule variable="Cdk_max">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <ci> Cdk </ci>
+            <cn> 44 </cn>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="CycD_max">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <ci> CycD </ci>
+            <cn> 185.74 </cn>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="CycB_max">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <ci> CycB </ci>
+            <cn> 45.92 </cn>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="APC_max">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <ci> APC </ci>
+            <cn> 0.999992 </cn>
+          </apply>
+        </math>
+            </assignmentRule>
+      <assignmentRule variable="E2F_max">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <divide/>
+            <ci> E2F </ci>
+            <cn> 0.998646 </cn>
+          </apply>
+        </math>
+            </assignmentRule>
+      <rateRule variable="APC">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <times/>
+            <apply>
+              <divide/>
+              <cn> 1 </cn>
+              <ci> epsilon_apc </ci>
+            </apply>
+            <apply>
+              <minus/>
+              <apply>
+                <divide/>
+                <apply>
+                  <power/>
+                  <ci> Cdk </ci>
+                  <ci> n </ci>
+                </apply>
+                <apply>
+                  <plus/>
+                  <apply>
+                    <power/>
+                    <apply>
+                      <times/>
+                      <ci> K_cdk_apc </ci>
+                      <apply>
+                        <ci> xi </ci>
+                        <ci> APC </ci>
+                        <ci> alpha_apc </ci>
+                        <ci> r </ci>
+                      </apply>
+                    </apply>
+                    <ci> n </ci>
+                  </apply>
+                  <apply>
+                    <power/>
+                    <ci> Cdk </ci>
+                    <ci> n </ci>
+                  </apply>
+                </apply>
+              </apply>
+              <ci> APC </ci>
+            </apply>
+          </apply>
+        </math>
+            </rateRule>
+      <rateRule variable="E2F">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <times/>
+            <apply>
+              <divide/>
+              <cn> 1 </cn>
+              <ci> epsilon_e2f </ci>
+            </apply>
+            <apply>
+              <minus/>
+              <apply>
+                <divide/>
+                <apply>
+                  <power/>
+                  <ci> CycD </ci>
+                  <ci> n </ci>
+                </apply>
+                <apply>
+                  <plus/>
+                  <apply>
+                    <power/>
+                    <apply>
+                      <times/>
+                      <ci> K_cyc_e2f </ci>
+                      <apply>
+                        <ci> xi </ci>
+                        <ci> E2F </ci>
+                        <ci> alpha_e2f </ci>
+                        <ci> r </ci>
+                      </apply>
+                    </apply>
+                    <ci> n </ci>
+                  </apply>
+                  <apply>
+                    <power/>
+                    <ci> CycD </ci>
+                    <ci> n </ci>
+                  </apply>
+                </apply>
+              </apply>
+              <ci> E2F </ci>
+            </apply>
+          </apply>
+        </math>
+            </rateRule>
+      <rateRule variable="Cdk">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">        
+          <apply>
+            <times/>
+            <apply>
+              <divide/>
+              <cn> 1 </cn>
+              <ci> epsilon_cdk </ci>
+            </apply>
+            <apply>
+              <minus/>
+              <apply>
+                <times/>
+                <apply>
+                  <divide/>
+                  <apply>
+                    <power/>
+                    <ci> CycB </ci>
+                    <ci> n </ci>
+                  </apply>
+                  <apply>
+                    <plus/>
+                    <apply>
+                      <power/>
+                      <apply>
+                        <times/>
+                        <ci> K_cyc_cdk </ci>
+                        <apply>
+                          <ci> xi </ci>
+                          <apply>
+                            <divide/>
+                            <ci> Cdk </ci>
+                            <ci> CycB </ci>
+                          </apply>
+                          <ci> alpha_cdk </ci>
+                          <ci> r </ci>
+                        </apply>
+                      </apply>
+                      <ci> n </ci>
+                    </apply>
+                    <apply>
+                      <power/>
+                      <ci> CycB </ci>
+                      <ci> n </ci>
+                    </apply>
+                  </apply>
+                </apply>
+                <ci> CycB </ci>
+              </apply>
+              <ci> Cdk </ci>
+            </apply>
+          </apply>
+        </math>
+            </rateRule>
+    </listOfRules>
+    <listOfReactions>
+      <reaction id="_J0" metaid="COPASI7" name="CycD_Synthesis" reversible="true">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI7">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/ncit/C61408"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI7">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:ncit:C61408"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+              <listOfProducts>
+          <speciesReference species="CycD" stoichiometry="1"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> default_compartment </ci>
+              <apply>
+                <ci> Function_for__J0 </ci>
+                <ci> d_syn </ci>
+                <ci> default_compartment </ci>
+              </apply>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+      <reaction id="_J1" metaid="COPASI8" name="CycD_degradation" reversible="true">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI8">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/SBO:0000179"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI8">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:sbo:SBO:0000179"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+              <listOfReactants>
+          <speciesReference species="CycD" stoichiometry="1"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> default_compartment </ci>
+              <apply>
+                <ci> Function_for__J1 </ci>
+                <ci> APC </ci>
+                <ci> CycD </ci>
+                <ci> d_deg </ci>
+                <ci> default_compartment </ci>
+                <ci> delta_d </ci>
+              </apply>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+      <reaction id="_J2" metaid="COPASI9" name="CycB_synthesis" reversible="true">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI9">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/ncit/C61408"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI9">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:ncit:C61408"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+              <listOfProducts>
+          <speciesReference species="CycB" stoichiometry="1"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> default_compartment </ci>
+              <apply>
+                <ci> Function_for__J2 </ci>
+                <ci> E2F </ci>
+                <ci> b_syn </ci>
+                <ci> default_compartment </ci>
+              </apply>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+      <reaction id="_J3" metaid="COPASI10" name="CycB_degradation" reversible="true">
+        <annotation>
+          <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">
+            <rdf:Description rdf:about="#COPASI10">
+	<bqbiol:isVersionOf>
+	<rdf:Bag>
+	<rdf:li rdf:resource="http://identifiers.org/SBO:0000179"/>
+	</rdf:Bag>
+	</bqbiol:isVersionOf>
+	</rdf:Description>
+	
+	
+	
+          </rdf:RDF>
+          <copasi:COPASI xmlns:copasi="http://www.copasi.org/static/sbml">
+            <rdf:RDF xmlns:CopasiMT="http://www.copasi.org/RDF/MiriamTerms#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="#COPASI10">
+                <CopasiMT:isVersionOf rdf:resource="urn:miriam:sbo:SBO:0000179"/>
+              </rdf:Description>
+            </rdf:RDF>
+          </copasi:COPASI>
+        </annotation>
+              <listOfReactants>
+          <speciesReference species="CycB" stoichiometry="1"/>
+        </listOfReactants>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">          
+            <apply>
+              <times/>
+              <ci> default_compartment </ci>
+              <apply>
+                <ci> Function_for__J3 </ci>
+                <ci> APC </ci>
+                <ci> CycB </ci>
+                <ci> b_deg </ci>
+                <ci> default_compartment </ci>
+                <ci> delta_b </ci>
+              </apply>
+            </apply>
+          </math>
+                </kineticLaw>
+      </reaction>
+    </listOfReactions>
+  </model>
+</sbml>
