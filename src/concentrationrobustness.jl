@@ -2,10 +2,11 @@
     isconcentrationrobust(rn::ReactionSystem)
 
     Requires the parameter values be Rational or Integer. Check whether a reaction network has any concentration-robust species. Return codes: 
-    - :MASS_ACTION_ACR - this species is concentraiton-robust for the given set of rate constants 
-    - :GLOBAL_ACR - this species is absolutely concentraiton-robust for every choice of rate constants
+    - :MASS_ACTION_ACR - this species is concentration-robust for the given set of rate constants 
+    - :GLOBAL_ACR - this species is absolutely concentration-robust for every choice of rate constants
     - :INCONCLUSIVE - the algorithm currently cannot decide whether this network has ACR. One could try calling this function with rate constants provided. 
     - :NO_ACR - the reaction network does not have ACR. 
+    - :INEXACTPARAMS - the algorithm cannot conclude concentration-robustness due to inexact parameters (Floats that are too small)
 
     Follows the approach outlined in [Puente et al. 2023](https://arxiv.org/abs/2401.00078).
 """
@@ -29,7 +30,12 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
 
     # Convert parameter values to rational values. 
 
-    eltype(values(p)) <: Rational || (p = Dict{eltype(keys(p)), Rational}(p))
+    try
+        ftype, stype = eltype(p).parameters
+        stype <: Rational || (p = Dict{ftype, Rational}(p))
+    catch InexactError
+        return :INEXACTPARAMS
+    end
 
     # Compute steady state ideal. 
     sfr_f = eval(C.SFR(rn; p = p))

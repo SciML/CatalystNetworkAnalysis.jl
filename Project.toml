@@ -18,6 +18,8 @@ MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
 Nemo = "2edaba10-b0f1-5616-af89-8c11ac63239a"
 Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
 PolynomialRoots = "3a141323-8675-5d76-9d11-e1df1406c778"
+ReactionNetworkImporters = "b4db0fb7-de2a-5028-82bf-5021f5cfa881"
+SBMLToolkit = "86080e66-c8ac-44c2-a1a0-9adaadfe4a4e"
 Satisfiability = "160ab843-0bc6-4ba4-9585-b7478b70f443"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
@@ -37,6 +39,8 @@ MultivariatePolynomials = "0.5.7"
 Nemo = "0.45.7"
 Oscar = "1.1.1"
 PolynomialRoots = "1.0.0"
+ReactionNetworkImporters = "0.15.1"
+SBMLToolkit = "0.1.29"
 SafeTestsets = "0.1.0"
 Satisfiability = "0.1.1"
 SparseArrays = "1"
@@ -45,8 +49,8 @@ julia = "1.10"
 
 [extras]
 SBMLImporter = "210efffb-c3c8-456d-a807-6f55560b12fe"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "SBMLImporter", "SafeTestsets"]

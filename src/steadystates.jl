@@ -10,7 +10,7 @@ mutable struct NetworkSummary
 end
 
 function networksummary(rn::ReactionSystem; p::VarMapType = rn.defaults, u0::VarMapType = Dict()) 
-    all(r -> ismassaction(rn, rn), reactions(rn)) || error("The network summary analysis currently only works for mass-action networks with integer coefficients.")
+    all(r -> ismassaction(r, rn), reactions(rn)) || error("The network summary analysis currently only works for mass-action networks with integer coefficients.")
 
     # Structural Properties. 
     eq = hasuniquesteadystates(rn; p = p)
@@ -190,6 +190,12 @@ function SFR(rn::ReactionSystem; u0::VarMapType = Dict(), p::VarMapType = Dict()
     sfr_f
 end
 
+"""
+    modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
+
+    Construct the modified SFR for the mixed volume and injectivity. Differs from the other SFR function in that certain species' rates get replaced with conservation laws, but not substituted out altogether. 
+"""
+
 function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict()) 
     conslaws = conservationlaws(rn) 
     d, ZZconslaws = Oscar.rref(ZZMatrix(conslaws))
@@ -197,7 +203,7 @@ function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
     conslaws = Matrix{Int64}(ZZconslaws)
 
     sm = speciesmap(rn); u0vec = zeros(length(species(rn)))
-    u0 = symmap_to_varmap(rn, u0)
+    u0 = symmap_to_varmap(rn, Dict(u0))
     for spec in keys(sm)
         i = sm[spec]; u0vec[i] = u0[spec]
     end
@@ -218,9 +224,6 @@ function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
     return sfr_f
 end
 
-"""
-    Macro that evaluates the SFR expression, using variables of the desired type (DP, Oscar, Symbolics, etc.)
-"""
 
 # Upper bound on the number of steady states in a particular stoichiometric compatibility class. 
 function mixedvolume(rn::ReactionSystem, u0::VarMapType)

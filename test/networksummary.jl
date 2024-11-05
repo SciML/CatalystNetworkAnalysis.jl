@@ -17,3 +17,14 @@ let
     end
 end
 
+
+# Run on the SBML Mass Action Networks
+let
+    for (name, network) in ma_SBMLnets
+        @unpack rn, u0, p = network
+        ma = all(r -> ismassaction(r, rn), reactions(rn))
+        @btime ns = C.networksummary(rn; u0 = u0, p = p)
+        show(ns)
+    end
+end 
+

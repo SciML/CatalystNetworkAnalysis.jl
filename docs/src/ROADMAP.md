@@ -17,7 +17,10 @@
   6. Detecting multistationarity by looking for [sign changes in positive parameterizations](https://people.tamu.edu/~annejls/papers/structured.pdf)
   7. Improving methods for finding [minimum-deficiency translations of reaction networks](https://arxiv.org/pdf/1710.10637)
 
-
+### Beyond Mass Action
+1. Power law kinetics?
+2. Generalized mass action systems 
+3. Systems with parameter-dependent stoichiometric coefficients?
 
 
 

@@ -153,6 +153,22 @@ function cellDeathNetwork(n::Int64)
     rs 
 end
 
+#################################
+### MASS-ACTION SBML NETWORKS ###
+#################################
+
+ma_netdir = joinpath(@__DIR__, "mass-action-networks/")
+ma_SBMLnets = Dict()
+
+for file in readdir(ma_netdir)
+    name, ext = splitext(file)
+    path = joinpath(ma_netdir, file)
+    # println(name)
+    prn, cb = load_SBML(path)
+    ma_SBMLnets[name] = prn
+end
+
+
 ################################
 ### NON_MASS_ACTION NETWORKS ###
 ################################
