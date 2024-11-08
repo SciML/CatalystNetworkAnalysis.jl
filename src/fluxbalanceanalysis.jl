@@ -3,7 +3,6 @@
 
     Given a reaction network, returun the set of elementary flux modes of the reaction network. 
 """
-
 function elementaryfluxmodes(rn::ReactionSystem)
     S = netstoichmat(rn)
     m, n = size(S)

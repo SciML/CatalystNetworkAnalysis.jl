@@ -10,7 +10,6 @@
 
     Follows the approach outlined in [Puente et al. 2023](https://arxiv.org/abs/2401.00078).
 """
-
 function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict()) 
     nps = Catalyst.get_networkproperties(rn)
     Catalyst.deficiency(rn) == 1 && (isempty(robustspecies(rn)) : return :GLOBAL_ACR)
@@ -119,7 +118,6 @@ end
 
     For a network of deficiency one, return a vector of indices corresponding to species that are concentration robust, i.e. for every positive equilbrium, the concentration of species s will be the same. 
 """
-
 function robustspecies(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
     nps = Catalyst.get_networkproperties(rn)

@@ -103,7 +103,6 @@ end
 
     Given a reaction network (and an absolute tolerance for the nullspace matrix below which entries should be zero), test whether the reaction network's graph has a property called concordance. A concordant network will not admit multiple equilibria in any stoichiometric compatibility class. The algorithm for this check follows Haixia Ji's PhD thesis, (Ji, 2011).  
 """
-
 function isconcordant(rn::ReactionSystem) 
     S = netstoichmat(rn); (n, r) = size(S)
 
