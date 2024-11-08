@@ -237,7 +237,11 @@ function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
 end
 
 
-# Upper bound on the number of steady states in a particular stoichiometric compatibility class. 
+"""
+    mixedvolume(rn::ReactionSystem, u0::VarMapType)
+
+    Compounds an upper bound on the number of steady states in a particular stoichiometric compatibility class. 
+"""
 function mixedvolume(rn::ReactionSystem, u0::VarMapType)
     (length(u0) != length(species(rn))) && error("The length of the initial condition must equal the number of species in the reaction network.")
     sfr_f = modifiedSFR(rn, u0)

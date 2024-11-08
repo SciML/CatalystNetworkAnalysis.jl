@@ -32,7 +32,7 @@ These will only be accepted in the standardized format of a `Dict`, a Vector of 
 pmap = [:k1 => 1., :k2 => 1., :k3 => 1., :k4 => 1., :k5 => 1., :k6 => 1.]
 pmap = (:k1 => 1., :k2 => 1., :k3 => 1., :k4 => 1., :k5 => 1., :k6 => 1.)
 pmap = Dict([:k1 => 1., :k2 => 1., :k3 => 1., :k4 => 1., :k5 => 1., :k6 => 1.])
-pmap = Dict(zip(parameters(rn), ones(6))) # Creates dict from symbolic pairs
+pmap = Dict(zip(parameters(edelstein), ones(6))) # Creates dict from symbolic pairs
 ```
 
 In order to convert from a symbol dictionary to a Symbolics dictionary, one can use the `symmap_to_varmap` function from Catalyst. 
