@@ -1,8 +1,22 @@
-# init
-#
 using Documenter
 using CatalystNetworkAnalysis, Catalyst 
 
-makedocs(sitename="Catalyst Network Analysis Documentation")
- 
+makedocs(
+    sitename = "CatalystNetworkAnalysis.jl",
+    authors = "Vincent Du",
+    format = Documenter.HTML(prettyurls = (get(ENV, "CI", nothing) == "true")),
+    modules = [CatalystNetworkAnalysis, Catalyst],
+    doctest = false,
+    clean = true,
+    pages = Any[
+        "Home" => "index.md",
+        "Network Analysis Algorithms" => "algorithms.md",
+        "Roadmap" => "roadmap.md"
+    ],
+    warnonly = [:missing_docs]
+)
 
+deploydocs(
+   repo = "github.com/SciML/CatalystNetworkAnalysis.jl.git";
+   push_preview = true
+)

@@ -9,13 +9,28 @@ mutable struct NetworkSummary
     mixedvolume::Int 
 end
 
-function networksummary(rn::ReactionSystem; p::VarMapType = rn.defaults, u0::VarMapType = Dict()) 
+"""
+    networksummary(rn::ReactionSystem; p::VarMapType, u0::VarMapType, mv = false)
+
+    Summary of properties that can be inferred from the structure of a reaction network. May give different results depending on whether `p` or `u0` is supplied. The set of functions run are the following: 
+    - `hasuniquesteadystates`
+    - `isconcentrationrobust`
+    - `ispersistent`
+    - `mixedvolume`
+
+    Mixed volume may take a very long time to run and is disabled by default. It can be enabled by setting the flag `mv = true`. Note that mixed volume requires an initial condition. 
+"""
+function networksummary(rn::ReactionSystem; p::VarMapType = rn.defaults, u0::VarMapType = Dict(), mv = false) 
     all(r -> ismassaction(r, rn), reactions(rn)) || error("The network summary analysis currently only works for mass-action networks with integer coefficients.")
 
     # Structural Properties. 
     eq = hasuniquesteadystates(rn; p = p)
     acr = isconcentrationrobust(rn; p = p)
-    mv = isempty(u0) ? -1 : mixedvolume(rn, u0)
+    mv = if (isempty(u0) || !mv)
+            -1 
+        else
+            mixedvolume(rn, u0)
+        end
     pers = ispersistent(rn)
 
     NetworkSummary(eq, acr, pers, mv)
@@ -75,7 +90,6 @@ end
     - :KINETICALLY_MULTIPLE - multiple steady states in a certain SCC guaranteed for certain choices of rate constants
     - :POSSIBLY_MULTIPLE - discordant and/or high deficiency, but inconclusive whether there are system parameters that lead to the existence of an SCC with multiple steady states. 
 """
-
 function hasuniquesteadystates(rn::ReactionSystem; p::VarMapType = Dict(), u0::VarMapType = Dict()) 
 
     nps = Catalyst.get_networkproperties(rn)
@@ -133,7 +147,6 @@ end
 
     Checks whether the reaction system will have any periodic solutions. 
 """
-# Check whether a reaction network has periodic solutions. 
 function hasperiodicsolutions(rn::ReactionSystem) 
     isconservative(rn) && false
 end
@@ -195,7 +208,6 @@ end
 
     Construct the modified SFR for the mixed volume and injectivity. Differs from the other SFR function in that certain species' rates get replaced with conservation laws, but not substituted out altogether. 
 """
-
 function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict()) 
     conslaws = conservationlaws(rn) 
     d, ZZconslaws = Oscar.rref(ZZMatrix(conslaws))
@@ -225,7 +237,11 @@ function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
 end
 
 
-# Upper bound on the number of steady states in a particular stoichiometric compatibility class. 
+"""
+    mixedvolume(rn::ReactionSystem, u0::VarMapType)
+
+    Compounds an upper bound on the number of steady states in a particular stoichiometric compatibility class. 
+"""
 function mixedvolume(rn::ReactionSystem, u0::VarMapType)
     (length(u0) != length(species(rn))) && error("The length of the initial condition must equal the number of species in the reaction network.")
     sfr_f = modifiedSFR(rn, u0)

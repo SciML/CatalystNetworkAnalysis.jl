@@ -1,5 +1,5 @@
 ### CatalystNetworkAnalysis.jl for Reaction Network Analysis
-CatalystNetworkAnalysis.jl is a package that provides network analysis functionality for reaction networks built using Catalyst.jl. The algorithms implemented by this package, along with their relevant citations, can be found in the [Algorithms] 
+CatalystNetworkAnalysis.jl is a package that provides network analysis functionality for reaction networks built using Catalyst.jl. The algorithms implemented by this package, along with their relevant citations, can be found in the [Network Analysis Algorithms Overview](@ref) 
 section of the documentation. 
 
 Network analysis algorithms infer dynamical properties of reaction networks, such as the existence and uniqueness of steady states, from the graph structure of the network and the structure of their ODEs. This package implements algorithms that take input reaction networks, and perform this analysis. The benefit of this approach is that key properties of the network may be inferred *without* simulating them, and we can infer properties that are true of the network regardless of its specific choice of reaction rate constants or initial conditions. 
@@ -32,7 +32,7 @@ These will only be accepted in the standardized format of a `Dict`, a Vector of 
 pmap = [:k1 => 1., :k2 => 1., :k3 => 1., :k4 => 1., :k5 => 1., :k6 => 1.]
 pmap = (:k1 => 1., :k2 => 1., :k3 => 1., :k4 => 1., :k5 => 1., :k6 => 1.)
 pmap = Dict([:k1 => 1., :k2 => 1., :k3 => 1., :k4 => 1., :k5 => 1., :k6 => 1.])
-pmap = Dict(zip(parameters(rn), ones(6))) # Creates dict from symbolic pairs
+pmap = Dict(zip(parameters(edelstein), ones(6))) # Creates dict from symbolic pairs
 ```
 
 In order to convert from a symbol dictionary to a Symbolics dictionary, one can use the `symmap_to_varmap` function from Catalyst. 

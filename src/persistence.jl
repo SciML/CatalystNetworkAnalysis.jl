@@ -5,9 +5,7 @@
     - :PERSISTENT
     - :NOT_PERSISTENT
     - :INCONCLUSIVE: The persistence test is inconclusive; this function currently cannot determine whether this network is persistent or not.
-
 """
-
 function ispersistent(rs::ReactionSystem)
     siphons = minimalsiphons(rs)
     conservative = isconservative(rs)
@@ -32,7 +30,6 @@ end
 
     Constructs the set of minimal siphons of a reaction network, where a siphon is a set of species that can be "switched off," i.e. if the species each have concentration 0, the concentration of all the species will remain 0 for all time. A minimal siphon is one that does not contain a siphon as a strict subset.
 """
-
 function minimalsiphons(rs::ReactionSystem; algorithm = :SMT)
     if algorithm == :SMT
         return minimalsiphons_smt(rs)
@@ -138,7 +135,6 @@ end
 
     Checks if a siphon is critical, meaning that it does not contain the support of some positive conservation law. A reaction network with a critical siphon cannot be persistent.
 """
-
 function iscritical(siphon::Vector, S::Matrix)
     # Takes the rows of the stoichiometric matrix corresponding to the siphon species
     S_r = S[siphon, :]
@@ -165,7 +161,6 @@ end
 
     Returns the matrix of cycles (or flux vectors), or reaction fluxes at steady state. These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref). 
 """
-
 function cycles(rs::ReactionSystem)
     # nps = get_networkproperties(rs)
     nsm = netstoichmat(rs)
@@ -266,7 +261,6 @@ end
 
     Given a reaction network, return the set of elementary flux modes of the reaction network. 
 """
-
 function elementaryfluxmodes(rn::ReactionSystem)
     S = netstoichmat(rn)
     m, n = size(S)
