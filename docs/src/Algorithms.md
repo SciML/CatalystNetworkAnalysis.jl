@@ -28,13 +28,13 @@ Future desiderata for this check include methods from **monotone systems theory*
 
 Other functionality related to the existence and uniqueness of steady states: 
 ```@docs
-CatalystNetworkAnalysis.haspositivesteadystates
-CatalystNetworkAnalysis.hasperiodicsolutions
+# CatalystNetworkAnalysis.haspositivesteadystates
+# CatalystNetworkAnalysis.hasperiodicsolutions
 CatalystNetworkAnalysis.hasuniquesteadystates
-Catalyst.satisfiesdeficiencyzero
-Catalyst.satisfiesdeficiencyone
-Catalyst.iscomplexbalanced
-Catalyst.isdetailedbalanced
+# Catalyst.satisfiesdeficiencyzero
+# Catalyst.satisfiesdeficiencyone
+# Catalyst.iscomplexbalanced
+# Catalyst.isdetailedbalanced
 CatalystNetworkAnalysis.mixedvolume
 isconcordant
 deficiencyonealgorithm
