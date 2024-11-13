@@ -10,7 +10,7 @@ makedocs(
     clean = true,
     pages = Any[
         "Home" => "index.md",
-        "Network Analysis Algorithms" => "algorithms.md",
+        "Network Analysis Algorithms" => "Algorithms.md",
         "Roadmap" => "roadmap.md"
     ],
     warnonly = [:missing_docs]
