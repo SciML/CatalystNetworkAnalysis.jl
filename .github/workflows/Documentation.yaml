@@ -22,12 +22,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install binary dependencies needed for GLMakie to run in a headless environment
-      # xvfb: Creates a virtual frame buffer to simulate a display
-      # libgl1, mesa-utils, freeglut3-dev, xorg-dev, libxrandr-dev, libxinerama-dev, libxcursor-dev, libxi-dev, libxext-dev: Required libraries for OpenGL rendering
-      - name: Install binary dependencies
-        run: sudo apt-get update && sudo apt-get install -y xvfb libgl1 mesa-utils freeglut3-dev xorg-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
-
       - name: Install Julia
         uses: julia-actions/setup-julia@latest
         with:
@@ -41,7 +35,7 @@ jobs:
       # Install Julia package dependencies for the documentation project
       - name: Install dependencies
         run: >
-          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+          julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
 
       # Build and deploy the documentation using xvfb to simulate a display for GLMakie
       # xvfb-run: Runs Julia with a virtual display to support OpenGL rendering
@@ -52,7 +46,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for permissions to deploy documentation
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
         run: >
-          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' 
           julia --project=docs --color=yes --code-coverage=user docs/make.jl
 
       - name: Upload site as artifact
