@@ -157,29 +157,17 @@ end
 ### MASS-ACTION SBML NETWORKS ###
 #################################
 
-ma_netdir = joinpath(@__DIR__, "mass-action-networks/")
-ma_SBMLnets = Dict()
-
-for file in readdir(ma_netdir)
-    name, ext = splitext(file)
-    path = joinpath(ma_netdir, file)
-    # println(name)
-    prn, cb = load_SBML(path)
-    ma_SBMLnets[name] = prn
-end
-
-
-################################
-### NON_MASS_ACTION NETWORKS ###
-################################
-
-netdir = joinpath(@__DIR__, "SBMLNetworks/")
-nets = Dict()
+netdir = joinpath(@__DIR__, "mass-action-networks/")
+ma_nets = Dict()
 
 for file in readdir(netdir)
     name, ext = splitext(file)
     path = joinpath(netdir, file)
-    prn, cb = load_SBML(path)
-    nets[name] = prn
+    try
+        prn, cb = load_SBML(path)
+        ma_nets[name] = prn
+    catch e
+        continue
+    end
 end
 

@@ -18,13 +18,13 @@ let
 end
 
 
-# Run on the SBML Mass Action Networks
+# Run on the SBML Mass Action Networks. Benchmark
+using BenchmarkTools
 let
-    for (name, network) in ma_SBMLnets
+    for (name, network) in ma_nets 
         @unpack rn, u0, p = network
-        ma = all(r -> ismassaction(r, rn), reactions(rn))
-        @btime ns = C.networksummary(rn; u0 = u0, p = p)
-        show(ns)
+        all(r -> ismassaction(r, rn), reactions(rn)) || error("Non-mass action network.")
+        @btime
     end
 end 
 
