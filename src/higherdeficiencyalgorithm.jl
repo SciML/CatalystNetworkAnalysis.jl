@@ -10,7 +10,8 @@
 
     For a large subset of networks with deficiency greater than 1, this algorithm constructs 
     an inequality system that can be used to decide whether the system has the capacity to 
-    admit multiple steady states. 
+    admit multiple steady states. Returns `true` if the capability of having multiple steady states
+    is detected, and `false` if not. 
 """
 function higherdeficiencyalgorithm(rn::ReactionSystem) 
     # Choose an orientation. 
@@ -50,7 +51,7 @@ function higherdeficiencyalgorithm(rn::ReactionSystem)
     addirrevconstraints(model, submat, W_irrev)
     addrevconstraints(model, submat, prodmat, W_rev)
 
-    # Generate forestal basis
+    # Generate forestal basis - basis of the space ker L_O ∩ Γ_W
     B2 = findforestalbasis(rn)
 
     # Generate sign patterns
