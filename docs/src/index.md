@@ -38,3 +38,11 @@ pmap = Dict(zip(parameters(edelstein), ones(6))) # Creates dict from symbolic pa
 In order to convert from a symbol dictionary to a Symbolics dictionary, one can use the `symmap_to_varmap` function from Catalyst. 
 
 ### Comparisons to existing packages
+A variety of packages for network analysis exist, including the following: 
+1. [Chemical Reaction Network Toolbox](https://zenodo.org/records/5149266) (Feinberg et al.) 
+2. [CoNTRoL](https://control.math.wvu.edu/) (Johnston et al.) 
+
+### Starting with Julia and Catalyst
+Please see the [starting with Julia](https://docs.sciml.ai/Catalyst/stable/introduction_to_catalyst/catalyst_for_new_julia_users/) section of Catalyst.jl's documentation for tips on getting started with Julia in general. 
+
+If you have a reaction network stored in some other file format, such as `.net`, SBML, and others, please reference the [loading chemical reaction networks](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/) tutorial in the Catalyst documentation. There are sections for loading `.net` and SBML files. Once the reaction network is loaded as a Catalyst `ReactionSystem`, it can be passed to the network analysis algorithms defined in this function. 
