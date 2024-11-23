@@ -5,7 +5,7 @@ using UnPack, SBMLImporter, SBMLToolkit
 @testset "CatalystNetworkAnalysis.jl" begin
     # Write your tests here.
 
-    @time @safetestset "Concentration Robustness" begin include("ACR.jl")
+    @time @safetestset "Concentration Robustness" begin include("ACR.jl") end
     @time @safetestset "Concordance Helpers" begin include("concordancehelpers.jl") end
     @time @safetestset "Siphons" begin include("siphons.jl") end
     @time @safetestset "Persistence" begin include("persistence.jl") end
