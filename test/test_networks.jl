@@ -1,6 +1,5 @@
 # Test networks (From Johnston et al, 2018)
 using SBMLImporter
-
 t = Catalyst.default_t()
 
 MAPK = @reaction_network mapk begin
