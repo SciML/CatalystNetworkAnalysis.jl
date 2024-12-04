@@ -1,3 +1,4 @@
+using Catalyst, CatalystNetworkAnalysis
 const C = CatalystNetworkAnalysis
 
 # Basic examples (section 2) 
