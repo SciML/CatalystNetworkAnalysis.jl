@@ -1,3 +1,5 @@
+using Catalyst, CatalystNetworkAnalysis
+const C = CatalystNetworkAnalysis
 t = Catalyst.default_t()
 
 # Test the mixed volume function. These test networks are drawn from Gross, Hill 2020. 
@@ -7,8 +9,6 @@ let
         k2, A --> 2A
         (k3, k4), 2A <--> 3A
     end
-
-    modified_SFR(rn, u0)
 
     # Programmatically generating a cell death reaction network
     t = Catalyst.default_t()
