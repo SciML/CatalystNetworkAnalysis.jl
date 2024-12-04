@@ -9,7 +9,7 @@ using LinearAlgebra
 using Graphs
 using SparseArrays
 using IterTools
-using SparseArrays
+using StaticArrays 
 
 import ModelingToolkit as MT
 

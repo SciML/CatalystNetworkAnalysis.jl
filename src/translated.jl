@@ -4,8 +4,6 @@
 # (1) Johnston, M. D. Translated Chemical Reaction Networks. Bull Math Biol 2014, 76 (5), 1081–1116. https://doi.org/10.1007/s11538-014-9947-5.
  
 # Functionality for translating chemical reaction networks. 
-
-
 struct Translation{T<:Int} 
     rn::ReactionSystem
     Y_T::Matrix{T} # The new complex-composition matrix.
@@ -73,7 +71,7 @@ function rrgraph(rn::ReactionSystem)
     set_silent(model)
     set_optimizer_attribute(model, "mip_feasibility_tolerance", 1e-10)
 
-    # Essentially an adjacency matrix for the reaciton-reaction graph 
+    # Essentially an adjacency matrix for the reaction-reaction graph 
     @variable(model, edge[1:r, 1:r], Bin)
     @objective(model, Min, sum(edge))
 
