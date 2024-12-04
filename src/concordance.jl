@@ -72,7 +72,7 @@ function signconstraintmodel(S::Matrix; model = nothing, var::String = "", in_su
     ispos = var*"_ispos"; isneg = var*"_isneg"; iszer = var*"_iszero"
 
     model[Symbol(ispos)] = @variable(model, [i = 1:s], Bin, base_name = ispos)
-    model[Symbol(isneg)] = @variable(model, [i = 2:s], Bin, base_name = isneg)
+    model[Symbol(isneg)] = @variable(model, [i = 1:s], Bin, base_name = isneg)
     model[Symbol(iszer)] = @variable(model, [i = 1:s], Bin, base_name = iszer) 
 
     @constraints(model, begin
@@ -103,7 +103,6 @@ end
 
     Given a reaction network (and an absolute tolerance for the nullspace matrix below which entries should be zero), test whether the reaction network's graph has a property called concordance. A concordant network will not admit multiple equilibria in any stoichiometric compatibility class. The algorithm for this check follows Haixia Ji's PhD thesis, (Ji, 2011).  
 """
-
 function isconcordant(rn::ReactionSystem) 
     S = netstoichmat(rn); (n, r) = size(S)
 
@@ -274,6 +273,7 @@ function movebackward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64})
     end
 end
     
+# TODO: Compute concordance based on the speices-reaction graph and extensions. 
 
 # function isstronglyconcordant(rn::ReactionSystem) 
 #     

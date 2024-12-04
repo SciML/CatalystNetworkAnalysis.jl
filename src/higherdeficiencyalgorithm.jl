@@ -1,7 +1,18 @@
 ###################################
 ### HIGHER DEFICIENCY ALGORITHM ###
 ###################################
+# TODO
+# - implement finding forestal basis
+# - 
 
+"""
+    higherdeficiencyalgorithm(rn::ReactionSystem)
+
+    For a large subset of networks with deficiency greater than 1, this algorithm constructs 
+    an inequality system that can be used to decide whether the system has the capacity to 
+    admit multiple steady states. Returns `true` if the capability of having multiple steady states
+    is detected, and `false` if not. 
+"""
 function higherdeficiencyalgorithm(rn::ReactionSystem) 
     # Choose an orientation. 
     S = netstoichmat(rn); rev_idxs = []
@@ -28,7 +39,8 @@ function higherdeficiencyalgorithm(rn::ReactionSystem)
         isempty(irrev_rxs) ? push!(W_rev, rxs[1]) : push!(W_irrev, irrev_rxs[1])
     end
 
-    # Reorient. 
+    # Reorient if needed
+
 
     # Build sign constraint model and add reaction constraints. 
     model = C.signconstraintmodel(S, model = model, var = "μ")
@@ -38,6 +50,34 @@ function higherdeficiencyalgorithm(rn::ReactionSystem)
     prodmat = prodstoichmat(rn); submat = substoichmat(rn)
     addirrevconstraints(model, submat, W_irrev)
     addrevconstraints(model, submat, prodmat, W_rev)
+
+    # Generate forestal basis - basis of the space ker L_O ∩ Γ_W
+    B2 = findforestalbasis(rn)
+
+    # Generate sign patterns
+    for sp in compatiblesignpatterns(rn)
+        for shelving in shelvings(rn)
+            solveconstraints(rn)
+        end
+    end
+    
+end
+
+function solveconstraints(rn::ReactionSystem, shelving, signpattern) 
+    optimize!(model)
+    feasible = is_solved_and_feasible(model); 
+
+    unregister(model, :M_equal); 
+    unregister(model, :UM); unregister(model, :UL); unregister(model, :ML) 
+
+    for con in all_constraints(model, include_variable_in_set_constraints = true)
+        JuMP.name(con) == "" || begin
+            unregister(model, Symbol(JuMP.name(con))) 
+            delete(model, con)
+        end
+    end
+
+    feasible
 end
 
 # Irreversible Reactions: g > 0, h > 0, ρ = exp(y⋅μ)
@@ -87,10 +127,14 @@ function addrevconstraint(model, prod, sub, idxs)
         end)
 end
 
-function findforestalbasis() 
+function hasforestalbasis(rn::ReactionSystem) 
     
 end
 
 function generateshelving() 
+    
+end
+
+function compatiblesignpatterns(rn::ReactionSystem) 
     
 end

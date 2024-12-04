@@ -1,13 +1,12 @@
-import CatalystNetworkAnalysis as C
+const C = CatalystNetworkAnalysis
 
 """
     deficiencyonealgorithm(rn::ReactionSystem)
 
     Determine whether a regular deficiency one network will have the ability to admit multiple equilibria and degenerate equilibria. Returns true if so. 
 """
-
 function deficiencyonealgorithm(rn::ReactionSystem)
-    (deficiency(rn) == 1 && isregular(rn)) || error("The deficiency one algorithm only works for regular deficiency one networks.")
+    (Catalyst.deficiency(rn) == 1 && isregular(rn)) || error("The deficiency one algorithm only works for regular deficiency one networks.")
 
     g = confluencevector(rn)
     partitions = generatepartitions(rn)
@@ -200,12 +199,3 @@ function generatepartitions(rn::ReactionSystem)
     end
     partitions_complexes
 end
-
-
-
-
-
-
-
-
-

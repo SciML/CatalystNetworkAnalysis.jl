@@ -8,9 +8,11 @@
 """
     ispersistent(rs::ReactionSystem)
 
-    Checks if a reaction system is persistent, meaning that none of its species with positive concentration will go extinct (asymptotically approach 0). 
+    Checks if a reaction system is persistent, meaning that none of its species with positive concentration will go extinct (asymptotically approach 0). The possible outputs: 
+    - :PERSISTENT
+    - :NOT_PERSISTENT
+    - :INCONCLUSIVE: The persistence test is inconclusive; this function currently cannot determine whether this network is persistent or not.
 """
-
 function ispersistent(rs::ReactionSystem)
     siphons = minimalsiphons(rs)
     conservative = isconservative(rs)
@@ -19,14 +21,12 @@ function ispersistent(rs::ReactionSystem)
 
     # Conservative case
     if conservative
-        all(s -> !iscritical(s, S), siphons) && return true
-        !consistent && return false
+        all(s -> !iscritical(s, S), siphons) && return :PERSISTENT
+        !consistent && return :NOT_PERSISTENT
     end
 
-    error("The persistence test is inconclusive; this function currently cannot determine whether this network is persistent or not.")
+    return :INCONCLUSIVE
 end
-
-
 
 ###############
 ### SIPHONS ###
@@ -37,7 +37,6 @@ end
 
     Constructs the set of minimal siphons of a reaction network, where a siphon is a set of species that can be "switched off," i.e. if the species each have concentration 0, the concentration of all the species will remain 0 for all time. A minimal siphon is one that does not contain a siphon as a strict subset.
 """
-
 function minimalsiphons(rs::ReactionSystem; algorithm = :SMT)
     if algorithm == :SMT
         return minimalsiphons_smt(rs)
@@ -143,7 +142,6 @@ end
 
     Checks if a siphon is critical, meaning that it does not contain the support of some positive conservation law. A reaction network with a critical siphon cannot be persistent.
 """
-
 function iscritical(siphon::Vector, S::Matrix)
     # Takes the rows of the stoichiometric matrix corresponding to the siphon species
     S_r = S[siphon, :]

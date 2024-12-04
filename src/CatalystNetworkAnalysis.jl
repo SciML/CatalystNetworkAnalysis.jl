@@ -1,11 +1,13 @@
 module CatalystNetworkAnalysis
 
 using Catalyst
-using Satisfiability
-using Oscar, Nemo, Polyhedra
-using JuMP, HiGHS
+using Satisfiability # For siphon detection
+using Oscar, Nemo, Hecke # Algebraic functionality
+using JuMP, HiGHS # For concordance and deficiency algorithms
+using MixedSubdivisions, DynamicPolynomials # For polytope analysis
 using LinearAlgebra
 using Graphs
+using SparseArrays
 using IterTools
 using SparseArrays
 
@@ -24,6 +26,7 @@ include("steadystates.jl")
 export networksummary, SFR
 include("concentrationrobustness.jl")
 export isconcentrationrobust
+include("utils.jl")
 
 include("translated.jl")
 
