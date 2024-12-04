@@ -39,7 +39,7 @@ end
 """
 function isconsistent(rs::ReactionSystem)
     cyclemat = cycles(rs)
-    haspositivesolution(cyclemat)
+    has_positive_solution(cyclemat)
 end
 
 """
@@ -49,7 +49,7 @@ end
 """
 function isconservative(rs::ReactionSystem)
     conslaws = conservationlaws(rs)
-    haspositivesolution(copy(conslaws'))
+    has_positive_solution(copy(conslaws'))
 end
 
 """
@@ -101,9 +101,8 @@ end
 """
     elementaryfluxmodes(rn::ReactionSystem)
 
-    Given a reaction network, returun the set of elementary flux modes of the reaction network. 
+    Given a reaction network, return the set of elementary flux modes of the reaction network. 
 """
-
 function elementaryfluxmodes(rn::ReactionSystem)
     S = netstoichmat(rn)
     m, n = size(S)
