@@ -77,7 +77,7 @@ end
 ###################
 
 # Given a matrix M, determine whether there is some x in the image space of M that is positive. If nonneg is true, instead looks for a non-negative solution that is not the zero vector.
-function has_positive_solution(M::M{T}; nonneg = false) where {T, M <: AbstractMatrix}
+function has_positive_solution(M::T; nonneg = false) where {T <: AbstractMatrix}
     iszero(M) && return false
     all(>=(0), M) && return true
     m, n = size(M)
@@ -124,10 +124,8 @@ function elementary_flux_modes(rn::ReactionSystem)
     m, n = size(S)
     hyperplanes = [Polyhedra.HyperPlane(S[i, :], 0) for i in 1:m]
     halfspaces = [Polyhedra.HalfSpace(-I(n)[i, :], 0) for i in 1:n]
-    polycone = Polyhedra.polyhedron(hrep(hyperplanes, halfspaces))
+    poly = Polyhedra.polyhedron(hrep(hyperplanes, halfspaces), CDDLib.Library())
+    vrep(poly)
 
-    Polyhedra.vrep(polycone)
-    Polyhedra.removevredundancy!(polycone)
-
-    EFMs = reduce(hcat, map(x->x.a, polycone.vrep.rays.rays))
+    EFMs = Matrix{Int64}(reduce(hcat, map(x->x.a, Polyhedra.rays(poly))))
 end

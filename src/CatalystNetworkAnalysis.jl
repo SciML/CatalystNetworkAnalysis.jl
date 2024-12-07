@@ -29,7 +29,9 @@ include("steadystates.jl")
 export networksummary, SFR
 include("concentrationrobustness.jl")
 export isconcentrationrobust
+
 include("utils.jl")
+include("lp_utils.jl")
 
 include("translated.jl")
 

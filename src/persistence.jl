@@ -94,7 +94,7 @@ function minimalsiphons_smt(rs::ReactionSystem)
 end
 
 function removesupersets(indexsets)
-    indexsets = sort(indexsets, by=x->length(x))
+    indexsets = sort(indexsets, by=length)
     minimalsets = Array{Int64}[]
 
     for s in indexsets
