@@ -7,8 +7,8 @@
 struct Translation{T<:Int} 
     rn::ReactionSystem
     Y_T::Matrix{T} # The new complex-composition matrix.
-    δ_K::T
-    δ_E::T
+    δ_K::T # Kinetic deficiency 
+    δ_E::T # Effective deficiency
 end
 
 """
@@ -35,10 +35,12 @@ function WRDZ_translation(rn::ReactionSystem)
 
         # Update reactant complexes
         @label step_3
-        rxs = findall(==(1), rr_adj[i, :])
+        rxs = findall(==(1), @view rr_adj[i, :])
         for j in rxs
             p, s = (dst(e[i]), src(e[j]))
-            (@view Y_T[:, j]) .= Y_K[:, p] - Y_K[:, s] + Y_T[:, i]
+            for k in 1:size(Y_T, 1)
+                Y_T[k, j] = Y_K[k, p] - Y_K[k, s] + Y_T[k, i]
+            end
             P3 = setdiff(push!(P3, j), P2)
         end
 
@@ -113,7 +115,7 @@ function rrgraph(rn::ReactionSystem)
     end
 
     optimize!(model)
-    is_solved_and_feasible(model) ? return edge : return
+    is_solved_and_feasible(model) && return edge 
 end
 
 # Generate partitions of the reaction-to-reaction graph

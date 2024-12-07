@@ -11,6 +11,9 @@ using SparseArrays
 using IterTools
 using StaticArrays 
 
+using Polyhedra
+import CDDLib
+
 import ModelingToolkit as MT
 
 const M::Float64 = 1E4

@@ -4,7 +4,6 @@
 #   permanence in networks
 #   improve efficiency of siphon detection
 
-
 """
     ispersistent(rs::ReactionSystem)
 
@@ -94,9 +93,9 @@ function minimalsiphons_smt(rs::ReactionSystem)
     return removesupersets(siphons)
 end
 
-function removesupersets(indexsets::AbstractArray{<:Array})
+function removesupersets(indexsets)
     indexsets = sort(indexsets, by=x->length(x))
-    minimalsets = Array[]
+    minimalsets = Array{Int64}[]
 
     for s in indexsets
         if !any(ms->issubset(ms, s), minimalsets)
@@ -148,5 +147,5 @@ function iscritical(siphon::Vector, S::Matrix)
 
     # If there is a non-negative vector in the nullspace of S_red', then there is a positive conservation law with a support that is the subset of the siphon, and the siphon is not critical 
     conslaws_r = conservationlaws(S_r)
-    !haspositivesolution(copy(conslaws_r'), nonneg = true)
+    !has_positive_solution(copy(conslaws_r'), nonneg = true)
 end

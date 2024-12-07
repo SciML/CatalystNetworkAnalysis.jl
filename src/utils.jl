@@ -18,7 +18,7 @@ end
 """
     removespec(rn, spec)
 
-    Return the net stoichiometric matrix and incidence matrix obtained when removing a species at index spec from the reaction network. 
+    Return the net stoichiometric matrix and incidence matrix obtained when removing a species at index spec from the reaction network.
 """
 function removespec(rn::ReactionSystem, spec::Int64) 
     s, r = size(netstoichmat(rn))
@@ -39,9 +39,8 @@ end
 """
     transitiveclosure(arr, relation)
 
-    Given an iterable array and a (symmetric, reflexive) relation (a function that takes two objects, and returns true if they belong to the relation), return the partitions of the set under the transitive closure of the given relation. 
+    Given an iterable array and a (symmetric, reflexive) relation (a function that takes two objects, and returns true if they belong to the relation), return the partitions of the set under the transitive closure of the given relation.
 """
-
 function transitiveclosure(arr, relation) 
     adjmat = SparseArrays.spzeros(Bool, length(arr), length(arr))
     for idx in CartesianIndices(adjmat)

@@ -113,3 +113,21 @@ function is_extreme_idxset(S::M, idxs::Vector{Int}) where {M <: AbstractMatrix}
     cone_mat_eq = @view cone_mat[rowidxs, :]
     return rank(cone_mat_eq) == n - 1
 end
+
+"""
+    elementaryfluxmodes(rn::ReactionSystem)
+
+    Given a reaction network, return the set of elementary flux modes of the reaction network. 
+"""
+function elementary_flux_modes(rn::ReactionSystem)
+    S = netstoichmat(rn)
+    m, n = size(S)
+    hyperplanes = [Polyhedra.HyperPlane(S[i, :], 0) for i in 1:m]
+    halfspaces = [Polyhedra.HalfSpace(-I(n)[i, :], 0) for i in 1:n]
+    polycone = Polyhedra.polyhedron(hrep(hyperplanes, halfspaces))
+
+    Polyhedra.vrep(polycone)
+    Polyhedra.removevredundancy!(polycone)
+
+    EFMs = reduce(hcat, map(x->x.a, polycone.vrep.rays.rays))
+end
