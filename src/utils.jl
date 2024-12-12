@@ -57,3 +57,65 @@ function transitiveclosure(arr, relation)
     intersectgraph = SimpleGraph(adjmat)
     partition = Graphs.connected_components(intersectgraph)
 end
+
+"""
+    function reactiontocomplexmap(rn::ReactionSystem)
+
+Construct a map from the reactions of the system to the indices of the complexes they transform between.
+"""
+function reactiontocomplexmap(rn::ReactionSystem) 
+    rxtocomplexmap = Dict{Int, Pair{Int, Int}}()
+    D = incidencemat(rn)
+
+    for i in 1:size(D, 2)
+        p = findfirst(==(1), @view D[:, i])
+        s = findfirst(==(-1), @view D[:, i])
+        rxtocomplexmap[i] = s => p
+    end
+    rxtocomplexmap
+end
+
+function matrixtree(g::SimpleDiGraph, distmx::Matrix)
+    n = nv(g)
+    if size(distmx) != (n, n)
+        error("Size of distance matrix is incorrect.")
+    end
+
+    π = zeros(n)
+
+    if !Graphs.is_connected(g)
+        ccs = Graphs.connected_components(g)
+        for cc in ccs
+            sg, vmap = Graphs.induced_subgraph(g, cc)
+            distmx_s = distmx[cc, cc]
+            π_j = matrixtree(sg, distmx_s)
+            π[cc] = π_j
+        end
+        return π
+    end
+
+    # generate all spanning trees
+    ug = SimpleGraph(SimpleDiGraph(g))
+    trees = collect(Combinatorics.combinations(collect(edges(ug)), n - 1))
+    trees = SimpleGraph.(trees)
+    trees = filter!(t -> isempty(Graphs.cycle_basis(t)), trees)
+
+    # constructed rooted trees for every vertex, compute sum
+    for v in 1:n
+        rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
+        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
+    end
+
+    # sum the contributions
+    return π
+end
+
+function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
+    prod = 1
+    for e in edges(t)
+        s = Graphs.src(e)
+        t = Graphs.dst(e)
+        prod *= distmx[s, t]
+    end
+    prod
+end

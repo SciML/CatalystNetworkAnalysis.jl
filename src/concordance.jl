@@ -1,8 +1,14 @@
 # Given a reaction network, add concordance constraints to the linear programming model.
-function addConcordanceConstraints(model, rn::ReactionSystem) 
-    α = model[:α]; σ = model[:σ]
-    iszer = model[:σ_iszero]; ispos = model[:σ_ispos]; isneg = model[:σ_isneg]
-    S = netstoichmat(rn); D = incidencemat(rn); Y = complexstoichmat(rn)
+function add_concordance_constraints(model, rn::ReactionSystem) 
+    α = model[:α]
+    σ = model[:σ]
+    iszer = model[:σ_iszero]
+    ispos = model[:σ_ispos]
+    isneg = model[:σ_isneg]
+
+    S = netstoichmat(rn)
+    D = incidencemat(rn)
+    Y = complexstoichmat(rn)
     s, r = size(S)
 
     @variable(model, allzero[1:r], Bin)
@@ -60,9 +66,9 @@ function isconcordant(rn::ReactionSystem)
     #   2. If α[r] == 0 for some reaction r, either σ[s] == 0 for all s in the reactant complex, 
     #   3. or else there are two species s1, s2 in the reactant complex for which sign(σ[s1]) != sign(σ[s2])
 
-    model = addSignConstraints(S; varName = "σ") 
-    addSubspaceConstraints(kerS, model = model, varName = "α")
-    addConcordanceConstraints(model, rn)
+    model = add_sign_constraints(S; varName = "σ") 
+    add_subspace_constraints(kerS; model, varName = "α")
+    add_concordance_constraints(model, rn)
 
     optimize!(model)
     !is_solved_and_feasible(model)

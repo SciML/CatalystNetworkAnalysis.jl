@@ -44,8 +44,13 @@ function add_sign_constraints(S::M; model = nothing, varName::String = "") where
         @objective(model, Min, 0)
     end
     
-    ispos = var*"_ispos"; isneg = var*"_isneg"; iszer = var*"_iszero"
+    coeffs = varName*"_coeffs"
+    model[Symbol(coeffs)] = @variable(model, [i = 1:r], base_name = coeffs) 
+    model[Symbol(varName)] = @variable(model, [i = 1:s], base_name = varName)
 
+    ispos = var*"_ispos"
+    isneg = var*"_isneg"
+    iszer = var*"_iszero"
     model[Symbol(ispos)] = @variable(model, [i = 1:s], Bin, base_name = ispos)
     model[Symbol(isneg)] = @variable(model, [i = 1:s], Bin, base_name = isneg)
     model[Symbol(iszer)] = @variable(model, [i = 1:s], Bin, base_name = iszer) 
@@ -54,7 +59,7 @@ function add_sign_constraints(S::M; model = nothing, varName::String = "") where
        model[Symbol(iszer)] + model[Symbol(ispos)] + model[Symbol(isneg)] == ones(s) 
        sum(model[Symbol(iszer)]) <= s - 1 # Ensure that var is not the zero vector.
 
-       # iszero = 1 --> var[i] == 0 <--> (S * coeffs)[i] == 1
+       # iszero = 1 --> var[i] == 0 <--> (S * coeffs)[i] == 0
        model[Symbol(var)] + M * (ones(s) - model[Symbol(iszer)]) ≥ zeros(s)
        model[Symbol(var)] - M * (ones(s) - model[Symbol(iszer)]) ≤ zeros(s)
        (S*model[Symbol(coeffs)]) + M * (ones(s) - model[Symbol(iszer)]) ≥ zeros(s)
@@ -112,20 +117,4 @@ function is_extreme_idxset(S::M, idxs::Vector{Int}) where {M <: AbstractMatrix}
     rowidxs = deleteat!(collect(1:n+2*m), idxset)
     cone_mat_eq = @view cone_mat[rowidxs, :]
     return rank(cone_mat_eq) == n - 1
-end
-
-"""
-    elementaryfluxmodes(rn::ReactionSystem)
-
-    Given a reaction network, return the set of elementary flux modes of the reaction network. 
-"""
-function elementary_flux_modes(rn::ReactionSystem)
-    S = netstoichmat(rn)
-    m, n = size(S)
-    hyperplanes = [Polyhedra.HyperPlane(S[i, :], 0) for i in 1:m]
-    halfspaces = [Polyhedra.HalfSpace(-I(n)[i, :], 0) for i in 1:n]
-    poly = Polyhedra.polyhedron(hrep(hyperplanes, halfspaces), CDDLib.Library())
-    vrep(poly)
-
-    EFMs = Matrix{Int64}(reduce(hcat, map(x->x.a, Polyhedra.rays(poly))))
 end
