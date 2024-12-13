@@ -1,0 +1,3 @@
+- Write the Translation tests from Johnston
+- Write the ACR tests from the 2023 paper
+- Update the lp_utils file with the LP utilities

@@ -1,12 +1,14 @@
-# A network is discordant if there exists a nonzero σ ∈ image(S) and α ∈ ker(S) with the following sign properties: 
-# 1) If α[r] != 0 for some reaction's index r, then the reaction's reactant complex must contain some species s for which sign(σ[s]) == sign(α[r])
-# 2) If α[r] == 0 for some reaction r, either σ[s] == 0 for all s in the reactant complex, 
-# or else there are two species s1, s2 in the reactant complex for which sign(σ[s1]) != sign(σ[s2])
+# Given a reaction network, add concordance constraints to the linear programming model.
+function add_concordance_constraints(model, rn::ReactionSystem) 
+    α = model[:α]
+    σ = model[:σ]
+    iszer = model[:σ_iszero]
+    ispos = model[:σ_ispos]
+    isneg = model[:σ_isneg]
 
-function addconcordanceconstraints(model, rn::ReactionSystem) 
-    α = model[:α]; σ = model[:σ]
-    iszer = model[:σ_iszero]; ispos = model[:σ_ispos]; isneg = model[:σ_isneg]
-    S = netstoichmat(rn); D = incidencemat(rn); Y = complexstoichmat(rn)
+    S = netstoichmat(rn)
+    D = incidencemat(rn)
+    Y = complexstoichmat(rn)
     s, r = size(S)
 
     @variable(model, allzero[1:r], Bin)
@@ -44,86 +46,33 @@ function addconcordanceconstraints(model, rn::ReactionSystem)
     end
 end
 
-# Given a matrix S, return a linear programming model with the constraints that the
-# desired vector μ will be sign-compatible with the image space of S. If the model
-# already exists, add new sign compatibility constraints to the model.  
-
-function signconstraintmodel(S::Matrix; model = nothing, var::String = "", in_subspace = false)
-    (s, r) = size(S)
-
-    # Initialize model if none provided. 
-    model == nothing && begin 
-        model = Model(HiGHS.Optimizer); 
-        set_silent(model)
-        set_optimizer_attribute(model, "mip_feasibility_tolerance", 1e-10)
-        @objective(model, Min, 0)
-    end
-        
-    coeffs = var*"_coeffs"
-    model[Symbol(coeffs)] = @variable(model, [i = 1:r], base_name = coeffs) 
-    model[Symbol(var)] = @variable(model, [i = 1:s], base_name = var)
-
-    if in_subspace
-        @constraint(model, S*model[Symbol(coeffs)] == model[Symbol(var)])
-        return model
-    end
-
-    # Ensure that μ is sign-compatible with the stoichiometric subspace.
-    ispos = var*"_ispos"; isneg = var*"_isneg"; iszer = var*"_iszero"
-
-    model[Symbol(ispos)] = @variable(model, [i = 1:s], Bin, base_name = ispos)
-    model[Symbol(isneg)] = @variable(model, [i = 1:s], Bin, base_name = isneg)
-    model[Symbol(iszer)] = @variable(model, [i = 1:s], Bin, base_name = iszer) 
-
-    @constraints(model, begin
-       model[Symbol(iszer)] + model[Symbol(ispos)] + model[Symbol(isneg)] == ones(s) 
-       sum(model[Symbol(iszer)]) <= s - 1 # Ensure that var is not the zero vector.
-
-       # iszero = 1 --> var[i] == 0 <--> (S * coeffs)[i] == 1
-       model[Symbol(var)] + M * (ones(s) - model[Symbol(iszer)]) ≥ zeros(s)
-       model[Symbol(var)] - M * (ones(s) - model[Symbol(iszer)]) ≤ zeros(s)
-       (S*model[Symbol(coeffs)]) + M * (ones(s) - model[Symbol(iszer)]) ≥ zeros(s)
-       (S*model[Symbol(coeffs)]) - M * (ones(s) - model[Symbol(iszer)]) ≤ zeros(s)
-
-       # isnegative = 1 --> var[i] < 0 <--> (S * coeffs)[i] < 0
-       model[Symbol(var)] - M * (ones(s) - model[Symbol(isneg)]) ≤ -ones(s) * ϵ
-       (S*model[Symbol(coeffs)]) - M * (ones(s) - model[Symbol(isneg)]) ≤ -ones(s) * ϵ
-
-       # ispositive = 1 --> var[i] > 0 <--> (S * coeffs)[i] > 0
-       model[Symbol(var)] + M * (ones(s) - model[Symbol(ispos)]) ≥ ones(s) * ϵ
-       (S*model[Symbol(coeffs)]) + M * (ones(s) - model[Symbol(ispos)]) ≥ ones(s) * ϵ
-    end)
-
-    model
-end
-
-
 """
     isconcordant(rn::ReactionSystem, atol=1e-12)
 
     Given a reaction network (and an absolute tolerance for the nullspace matrix below which entries should be zero), test whether the reaction network's graph has a property called concordance. A concordant network will not admit multiple equilibria in any stoichiometric compatibility class. The algorithm for this check follows Haixia Ji's PhD thesis, (Ji, 2011).  
 """
 function isconcordant(rn::ReactionSystem) 
-    S = netstoichmat(rn); (n, r) = size(S)
+    S = netstoichmat(rn)
 
     numcols, kerS = nullspace_right_rational(ZZMatrix(S))
     kerS = Matrix{Int}(kerS[:, 1:numcols])
 
-    model = signconstraintmodel(S, var = "σ") 
-    signconstraintmodel(kerS, model = model, var = "α", in_subspace = true)
-    addconcordanceconstraints(model, rn)
+    # A network is **discordant** if there exists a:
+    #   1. σ nonzero and sign-compatible with image(S) and 
+    #   2. α ∈ ker(S) 
+    #
+    # such that 
+    #   1. If α[r] != 0 for some reaction's index r, then the reaction's reactant complex must contain some species s for which sign(σ[s]) == sign(α[r])
+    #   2. If α[r] == 0 for some reaction r, either σ[s] == 0 for all s in the reactant complex, 
+    #   3. or else there are two species s1, s2 in the reactant complex for which sign(σ[s1]) != sign(σ[s2])
+
+    model = add_sign_constraints(S; varName = "σ") 
+    add_subspace_constraints(kerS; model, varName = "α")
+    add_concordance_constraints(model, rn)
 
     optimize!(model)
     !is_solved_and_feasible(model)
 end
-
-
-
-
-
-
-
-
 
 ###############################
 ###### OLD IMPLEMENTATION #####

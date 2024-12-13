@@ -2,13 +2,21 @@ module CatalystNetworkAnalysis
 
 using Catalyst
 using Satisfiability # For siphon detection
-using Oscar, Nemo, Hecke # Algebraic functionality
+
+# Algebraic functionality
+using Oscar, Nemo
+import Hecke: n_positive_roots
+
 using JuMP, HiGHS # For concordance and deficiency algorithms
 using MixedSubdivisions, DynamicPolynomials # For polytope analysis
 using LinearAlgebra
 using Graphs
-using SparseArrays
-using IterTools
+
+using SparseArrays, StaticArrays
+using IterTools, Combinatorics
+
+using Polyhedra
+import CDDLib
 
 import ModelingToolkit as MT
 
@@ -25,6 +33,13 @@ include("steadystates.jl")
 export networksummary, SFR
 include("concentrationrobustness.jl")
 export isconcentrationrobust
+
 include("utils.jl")
+include("lp_utils.jl")
+include("cycles.jl")
+export elementary_flux_modes
+
+include("translated.jl") 
+export WRDZ_translation, symbolic_steady_states
 
 end

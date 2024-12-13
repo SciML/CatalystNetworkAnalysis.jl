@@ -17,17 +17,17 @@ function deficiencyonealgorithm(rn::ReactionSystem)
     s, c = size(Y); r = size(S, 2)
     
     # Initialize sign compatibility model. 
-    model = C.signconstraintmodel(S, var = "μ")
+    model = C.add_sign_constraints(S, var = "μ")
     @variable(model, n)
 
     # Iterate over partitions. For each pair of UML partition and confluence vector, 
     # check if there exists a μ that satisfies the resulting constraints. 
     for partition in partitions
-        μ_sol, feasible = solveconstraints(rn, model, g, partition, cutdict)
+        feasible = solveconstraints(rn, model, g, partition, cutdict)
         feasible && return true
 
         if reversible
-            μ_sol, feasible = solveconstraints(rn, model, -g, partition, cutdict)
+            feasible = solveconstraints(rn, model, -g, partition, cutdict)
             feasible && return true
         end
     end
@@ -106,8 +106,9 @@ function solveconstraints(rn::ReactionSystem, model::Model, confluence::Vector, 
         end
     end
 
-    optimize!(model); 
-    feasible = is_solved_and_feasible(model); μ_sol = nothing 
+    optimize!(model) 
+    feasible = is_solved_and_feasible(model)
+    μ_sol = nothing 
 
     unregister(model, :M_equal); 
     unregister(model, :UM); unregister(model, :UL); unregister(model, :ML) 
@@ -124,7 +125,6 @@ end
 
 # Assuming that the graph is regular, generate the set of cut-link partitions
 # created by removing each cut-link connecting two terminal complexes. 
-
 function cutlinkpartitions(rn::ReactionSystem) 
     tlcs = terminallinkageclasses(rn)
     lcs = linkageclasses(rn)
@@ -173,9 +173,10 @@ function generatepartitions(rn::ReactionSystem)
 
     # In this representation of the UML partition, the indexes of complexes 
     # in each component are stored. 
+    numparts = 3^num_nontrivial_tlcs
     partitions_complexes = Array[]
 
-    for i in 0:3^num_nontrivial_tlcs - 1
+    for i in 0:numparts - 1
         buckets = digits(i, base=3, pad=num_nontrivial_tlcs)
         partition = [findall(==(l), buckets) for l in 0:2] 
 
@@ -195,7 +196,6 @@ function generatepartitions(rn::ReactionSystem)
         M = reduce(vcat, [nontrivial_tlcs[partition[2]]..., nonterminal_complexes], init = Int64[])
         L = reduce(vcat, nontrivial_tlcs[partition[3]], init = Int64[])
         push!(partitions_complexes, [U, M, L])
-        # push!(partitions_tlcs, partition)
     end
     partitions_complexes
 end
