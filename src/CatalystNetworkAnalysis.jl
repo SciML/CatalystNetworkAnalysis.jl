@@ -1,27 +1,25 @@
 module CatalystNetworkAnalysis
 
+using PrecompileTools: @setup_workload, @compile_workload
+
 using Catalyst
 using Satisfiability # For siphon detection
 
 # Algebraic functionality
-using Oscar, Nemo
-import Hecke: n_positive_roots
+using Oscar
 
 using JuMP, HiGHS # For concordance and deficiency algorithms
-using MixedSubdivisions, DynamicPolynomials # For polytope analysis
+const M::Float64 = 1E6
+const ϵ::Float64 = 1E-6 # Constants for the linear programming solvers 
+
 using LinearAlgebra
 using Graphs
-
-using SparseArrays, StaticArrays
 using IterTools, Combinatorics
+using SparseArrays
 
+using MixedSubdivisions, DynamicPolynomials # For polytope analysis
 using Polyhedra
 import CDDLib
-
-import ModelingToolkit as MT
-
-const M::Float64 = 1E4
-const ϵ::Float64 = 1E-1
 
 include("persistence.jl")
 export ispersistent, minimalsiphons, iscritical, isconservative, isconsistent
@@ -41,5 +39,7 @@ export elementary_flux_modes
 
 include("translated.jl") 
 export WRDZ_translation, symbolic_steady_states
+include("steady_state_parameterizations.jl")
+export symbolic_steady_states
 
 end

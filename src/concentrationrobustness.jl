@@ -6,13 +6,13 @@
     - :GLOBAL_ACR - this species is absolutely concentration-robust for every choice of rate constants
     - :INCONCLUSIVE - the algorithm currently cannot decide whether this network has ACR. One could try calling this function with rate constants provided. 
     - :NO_ACR - the reaction network does not have ACR. 
-    - :INEXACTPARAMS - the algorithm cannot conclude concentration-robustness due to inexact parameters (Floats that are too small)
+    - :INEXACTPARAMS - the algorithm cannot conclude concentration-robustness due to inexact parameters (floats that are too small)
 
     Follows the approach outlined in [Puente et al. 2023](https://arxiv.org/abs/2401.00078).
 """
 function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict()) 
     nps = Catalyst.get_networkproperties(rn)
-    Catalyst.deficiency(rn) == 1 && (isempty(robustspecies(rn)) : return :GLOBAL_ACR)
+    Catalyst.deficiency(rn) == 1 && isempty(robustspecies_δ1(rn)) && return :GLOBAL_ACR
 
     # Check necessary condition
     possibly_ACR = false
@@ -28,7 +28,6 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
     end
 
     # Convert parameter values to rational values. 
-
     try
         ftype, stype = eltype(p).parameters
         stype <: Rational || (p = Dict{ftype, Rational}(p))
@@ -83,7 +82,6 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
         end
     end
     
-    
     return :INCONCLUSIVE
 end
 
@@ -118,7 +116,7 @@ end
 
     For a network of deficiency one, return a vector of indices corresponding to species that are concentration robust, i.e. for every positive equilbrium, the concentration of species s will be the same. 
 """
-function robustspecies(rn::ReactionSystem)
+function robustspecies_δ1(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
     nps = Catalyst.get_networkproperties(rn)
 

@@ -4,16 +4,20 @@
 # (1) Johnston, M. D. Translated Chemical Reaction Networks. Bull Math Biol 2014, 76 (5), 1081–1116. https://doi.org/10.1007/s11538-014-9947-5.
  
 # Struct representing a network translation.
-struct Translation{T}
+mutable struct Translation{T <: Integer}
     """The original reaction network."""
     rn::ReactionSystem
-
-    """The new complex-composition matrix."""
+    """The complex-composition matrix of the translated reaction network."""
     Y_T::Matrix{T} 
-    """The new incidence matrix."""
+    """The incidence matrix of the translated reaction network."""
     D_T::Matrix{T}
     """Vector X where X[i] gives the index of the complex that i was translated into."""
-    translatedcomplexmap::Vector{Int}
+    translatedcomplexmap::Vector{T}
+    checkedrev::Bool = false
+    isweaklyrev::Bool = true
+    linkageclasses::Vector{Vector{T}} = Vector{Vector{T}}(undef, 0)
+    effectivedeficiency::T = -1
+    kineticdeficiency::T = -1
 end
 
 """
@@ -78,6 +82,7 @@ function WRDZ_translation(rn::ReactionSystem)
         @. Y_T[:,p] += Λ[:,i]
     end
 
+    # If any translated complex has negative amounts of some species, add a complex to each member of its linkage class 
     any(<(0), Y_T) && begin
         lcs = Catalyst.linkageclasses(rn)
 
@@ -111,7 +116,7 @@ function WRDZ_translation(rn::ReactionSystem)
         D_T[translatedcmap[p], i] = 1
     end
 
-    return Translation(rn, _Y_T, D_T, translatedcmap)
+    return Translation(rn = rn, Y_T = _Y_T, D_T = D_T, translatedcomplexmap = translatedcmap)
 end
 
 # Construct a reaction-reaction graph that is common-source compatible and elementary mode compatible. Return an adjacency matrix.
@@ -216,49 +221,46 @@ end
 
 # (1) Johnston, M. D.; Müller, S.; Pantea, C. A Deficiency-Based Approach to Parametrizing Positive Equilibria of Biochemical Reaction Systems. arXiv May 23, 2018. http://arxiv.org/abs/1805.09295 (accessed 2024-09-09).
 
-# Generating the parameterization from the above paper. 
-"""
-    symbolic_steady_states(rn::ReactionSystem)
-
-    Given a reaction system, compute the parameterization of the system's steady state in terms of the parameters.
-    1) For generalized mass action systems with kinetic deficiency zero. 
-    2) Algorithm for positive kinetic deficiency systems. 
-    3) Monomial parameterization for systems with toric steady states (Millan et al. 2012)
-    4) Using Matroids (fall-back), checking subsets of d variables? 
-
-    The output of this function is a symbolic function representing the parameterization. It takes some subset of the species and maps them into a steady state.  
-"""
-function symbolic_steady_states(rn::ReactionSystem; variable_search = false) 
-    if kineticdeficiency(rn) == 0
-    end
-
-    # κ ∘ τ
-    # Find a spanning forest
-    # Find B such that im B = ker M^T
-    # H is a generalized inverse of M
-end
-
 # Network analysis for translations
 
 function isweaklyreversible(trn::Translation) 
-    weaklyrev = true
+    trn.checkedrev && return trn.isweaklyrev
+
     g = Catalyst.incidencematgraph(trn.D_T)
 
     for lc in linkageclasses(trn)
         sg, _ = Graphs.induced_subgraph(g, lc)
-        Graphs.is_strongly_connected(sg) || (weaklyrev = false)
+        Graphs.is_strongly_connected(sg) || (trn.weaklyrev = false)
     end
-    weaklyrev
+    trn.checkedrev = true
+    trn.weaklyrev
 end
 
 function linkageclasses(trn::Translation) 
-    lcs = Graphs.connected_components(Catalyst.incidencematgraph(trn.D_T))
+    !isempty(trn.linkageclasses) && return trn.linkageclasses
+    trn.linkageclasses = Graphs.connected_components(Catalyst.incidencematgraph(trn.D_T))
+    trn.linkageclasses
 end
 
-function deficiency(trn::Translation) 
+function effectivedeficiency(trn::Translation) 
+    trn.effectivedeficiency >= 0 && return trn.effectivedeficiency
+
     rn = trn.rn
     S = netstoichmat(rn)
     nc = size(trn.D_T, 1)
     l = length(linkageclasses(trn))
-    nc - l - rank(S)
+    trn.effectivedeficiency = nc - l - rank(S)
+    trn.effectivedeficiency
+end
+
+function kineticdeficiency(trn::Translation) 
+    trn.kineticdeficiency >= 0 && return trn.kineticdeficiency
+
+    rn = trn.rn
+    D = incidencemat(rn)
+    nc = size(D, 1)
+    l = length(linkageclasses(rn))
+
+    trn.kineticdeficiency = nc - l - rank(trn.Y_T * D)
+    trn.kineticdeficiency
 end

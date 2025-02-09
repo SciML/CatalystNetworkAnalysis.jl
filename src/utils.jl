@@ -75,7 +75,7 @@ function reactiontocomplexmap(rn::ReactionSystem)
     rxtocomplexmap
 end
 
-function matrixtree(g::SimpleDiGraph, distmx::Matrix)
+function matrixtree(g::SimpleDiGraph, distmx::Matrix{T}) where T
     n = nv(g)
     if size(distmx) != (n, n)
         error("Size of distance matrix is incorrect.")
@@ -96,26 +96,61 @@ function matrixtree(g::SimpleDiGraph, distmx::Matrix)
 
     # generate all spanning trees
     ug = SimpleGraph(SimpleDiGraph(g))
-    trees = collect(Combinatorics.combinations(collect(edges(ug)), n - 1))
-    trees = SimpleGraph.(trees)
-    trees = filter!(t -> isempty(Graphs.cycle_basis(t)), trees)
 
-    # constructed rooted trees for every vertex, compute sum
-    for v in 1:n
-        rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
-        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
+    for tree in Combinatorics.combinations(collect(edges(ug)), n-1)
+        tree = SimpleGraph(tree)
+        isempty(Graphs.cycle_basis(t)) || continue
+        
+        # Add the tree product for each vertex
+        for v in 1:n
+            rootedTree = reverse(Graphs.bfs_tree(t, v, dir=:in)) 
+            π[v] += treeweight(t, g, distmx)
+        end
     end
 
-    # sum the contributions
-    return π
+    # Constructed rooted trees for every vertex, compute sum
+    return π 
 end
 
-function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
+function treeweight(tree::SimpleDiGraph, distmx::Matrix{T}) where T
     prod = 1
-    for e in edges(t)
+    for e in edges(tree)
         s = Graphs.src(e)
-        t = Graphs.dst(e)
-        prod *= distmx[s, t]
+        p = Graphs.dst(e)
+        prod *= distmx[s, p]
     end
     prod
+end
+
+"""
+    ratematrix(rs::ReactionSystem, parametermap)
+
+    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate 
+    constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple 
+    of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+function ratematrix(rs::ReactionSystem, rates::Vector{T} = reactionrates(rs)) where T
+    complexes, D = reactioncomplexes(rs)
+    n = length(complexes)
+    rxns = reactions(rs)
+    ratematrix = (T <: Symbolics.BasicSymbolic) ? zeros(Any, n, n) : zeros(T, n, n)
+
+    for r in 1:length(rxns)
+        rxn = rxns[r]
+        s = findfirst(==(-1), @view D[:, r])
+        p = findfirst(==(1), @view D[:, r])
+        ratematrix[s, p] = rates[r]
+    end
+    ratematrix
+end
+
+function matrixpower(v::Vector{T}, M::Matrix{T}) where T <: Number
+    n, m = size(M)
+    m != length(v) && error("Incorrect dimensions of matrix M.")
+    out = Vector{T}(undef, n)
+
+    for i in 1:n
+        out[i] = prod([v[j]^M[i, j] for j in 1:m])
+    end
+    out
 end

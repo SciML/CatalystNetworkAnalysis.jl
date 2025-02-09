@@ -145,3 +145,19 @@ let
     @test C.deficiency(translation) == 0
     @test C.isweaklyreversible(translation)
 end
+
+## Test generation of steady-state parameterizations
+let
+    rn = @reaction_network begin
+        (k1, k2), A + B <--> C
+        k3, C --> 2A
+        k4, 2A --> A + B
+        (k5, k6), A <--> B
+    end
+
+    kinase = @reaction_network begin
+        r1, X --> Xp
+        (r2, r3), Xp + Y <--> X + Yp
+        r4, Yp --> Y
+    end
+end
