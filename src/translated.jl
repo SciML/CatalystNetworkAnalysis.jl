@@ -4,7 +4,7 @@
 # (1) Johnston, M. D. Translated Chemical Reaction Networks. Bull Math Biol 2014, 76 (5), 1081–1116. https://doi.org/10.1007/s11538-014-9947-5.
  
 # Struct representing a network translation.
-mutable struct Translation{T <: Integer}
+Base.@kwdef mutable struct Translation{T <: Integer}
     """The original reaction network."""
     rn::ReactionSystem
     """The complex-composition matrix of the translated reaction network."""
@@ -25,7 +25,7 @@ end
 
     Given a reaction network, attempt to find a strongly-resolvable translation that is weakly-reversible and deficiency zero. Such translations are useful because they can be easily parameterized, and their multistability characteristics can be easily determined. Follows the algorithm implemented in (Johnston, 2018). 
 
-    Returns `nothing` if no translation is possible.
+    Returns `nothing` if no weakly-reversible deficiency-zero translation is possible.
 """
 function WRDZ_translation(rn::ReactionSystem) 
     rr_adj = construct_rr_graph(rn)
