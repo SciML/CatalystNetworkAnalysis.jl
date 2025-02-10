@@ -17,17 +17,17 @@ function deficiencyonealgorithm(rn::ReactionSystem)
     s, c = size(Y); r = size(S, 2)
     
     # Initialize sign compatibility model. 
-    model = C.add_sign_constraints(S, var = "μ")
+    model = C.add_sign_constraints(S, var_name = "μ")
     @variable(model, n)
 
     # Iterate over partitions. For each pair of UML partition and confluence vector, 
     # check if there exists a μ that satisfies the resulting constraints. 
     for partition in partitions
-        feasible = solveconstraints(rn, model, g, partition, cutdict)
+        sol, feasible = solveconstraints(rn, model, g, partition, cutdict)
         feasible && return true
 
         if reversible
-            feasible = solveconstraints(rn, model, -g, partition, cutdict)
+            sol, feasible = solveconstraints(rn, model, -g, partition, cutdict)
             feasible && return true
         end
     end
@@ -36,7 +36,8 @@ function deficiencyonealgorithm(rn::ReactionSystem)
 end
 
 function isregular(rn::ReactionSystem) 
-    lcs = linkageclasses(rn); tlcs = terminallinkageclasses(rn)
+    lcs = Catalyst.linkageclasses(rn)
+    tlcs = terminallinkageclasses(rn)
 
     img = incidencematgraph(rn)
     tlc_graphs = [Graphs.induced_subgraph(img, tlc)[1] for tlc in tlcs] 
@@ -57,7 +58,8 @@ function confluencevector(rn::ReactionSystem)
 
     idx = findfirst(i -> @view(g[:, i]) != zeros(nc), 1:nc) 
     g = g[:, idx]
-    tlcs = terminallinkageclasses(rn); lcs = linkageclasses(rn)
+    tlcs = terminallinkageclasses(rn)
+    lcs = Catalyst.linkageclasses(rn)
 
     absorptive = true
     for tlc in tlcs
@@ -127,7 +129,7 @@ end
 # created by removing each cut-link connecting two terminal complexes. 
 function cutlinkpartitions(rn::ReactionSystem) 
     tlcs = terminallinkageclasses(rn)
-    lcs = linkageclasses(rn)
+    lcs = Catalyst.linkageclasses(rn)
     inclusions = [findfirst(lc -> issubset(tlc, lc), lcs) for tlc in tlcs]
 
     img = Graphs.SimpleGraph(incidencematgraph(rn))

@@ -36,7 +36,6 @@ let
         k24, FS1_ --> F_ + S0_ 
     end
     
-    
     @test ispersistent(rn) == :PERSISTENT
 end
 
