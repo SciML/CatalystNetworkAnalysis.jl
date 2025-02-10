@@ -4,7 +4,7 @@
     Checks if a reaction network is consistent, i.e. admits a positive equilibrium for some choice of rate constants. Equivalent to [`ispositivelydependent`](@ref).
 """
 function isconsistent(rs::ReactionSystem)
-    cyclemat = cycles(rs)
+    cyclemat = Catalyst.cycles(rs)
     has_positive_solution(cyclemat)
 end
 

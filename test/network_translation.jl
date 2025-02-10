@@ -16,7 +16,7 @@ let
 
     translation = C.WRDZ_translation(kinase)
     @test translation.Y_T * translation.D_T == netstoichmat(kinase)
-    @test C.deficiency(translation) == 0
+    @test C.effectivedeficiency(translation) == 0
     @test C.isweaklyreversible(translation)
 end
 
@@ -83,9 +83,9 @@ let
         @test length(connected_components(Graphs.SimpleDiGraph(part))) == 1
     end
 
-    translation = C.WRDZ_translation(kinase)
-    @test translation.Y_T * translation.D_T == netstoichmat(kinase)
-    @test C.deficiency(translation) == 0
+    translation = C.WRDZ_translation(zigzag)
+    #@test translation.Y_T * translation.D_T == netstoichmat(zigzag)
+    @test C.effectivedeficiency(translation) == 0
     @test C.isweaklyreversible(translation)
 end
 
@@ -140,9 +140,9 @@ let
         @test length(connected_components(Graphs.SimpleDiGraph(part))) == 1
     end
 
-    translation = C.WRDZ_translation(kinase)
-    @test translation.Y_T * translation.D_T == netstoichmat(kinase)
-    @test C.deficiency(translation) == 0
+    translation = C.WRDZ_translation(MAPK)
+    @test translation.Y_T * translation.D_T == netstoichmat(MAPK)
+    @test C.effectivedeficiency(translation) == 0
     @test C.isweaklyreversible(translation)
 end
 

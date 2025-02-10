@@ -8,16 +8,18 @@ using Satisfiability # For siphon detection
 # Algebraic functionality
 using Oscar
 
-using JuMP, HiGHS # For concordance and deficiency algorithms
-const M::Float64 = 1E6
-const ϵ::Float64 = 1E-6 # Constants for the linear programming solvers 
+# Linear programming (for concordance + deficiency)
+using JuMP, HiGHS 
+const M::Float64 = 1E4
+const ϵ::Float64 = 1E-4
 
 using LinearAlgebra
 using Graphs
 using IterTools, Combinatorics
 using SparseArrays
 
-using MixedSubdivisions, DynamicPolynomials # For polytope analysis
+# Polytope analysis (EFMs)
+using MixedSubdivisions, DynamicPolynomials
 using Polyhedra
 import CDDLib
 
@@ -39,7 +41,5 @@ export elementary_flux_modes
 
 include("translated.jl") 
 export WRDZ_translation, symbolic_steady_states
-include("steady_state_parameterizations.jl")
-export symbolic_steady_states
 
 end

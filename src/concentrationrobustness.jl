@@ -12,7 +12,7 @@
 """
 function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict()) 
     nps = Catalyst.get_networkproperties(rn)
-    Catalyst.deficiency(rn) == 1 && isempty(robustspecies_δ1(rn)) && return :GLOBAL_ACR
+    Catalyst.deficiency(rn) == 1 && !isempty(robustspecies_δ1(rn)) && return :GLOBAL_ACR
 
     # Check necessary condition
     possibly_ACR = false
@@ -66,8 +66,10 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
     r_ξ, ξ = polynomial_ring(QQ, :ξ)
 
     !isempty(p) && for i in 1:numspecies(rn)
-        IQ = eliminate(I, vcat(specs[1:i-1], specs[i+1:end]))
+        IQ = Oscar.eliminate(I, vcat(specs[1:i-1], specs[i+1:end]))
         for g in gens(IQ)
+            iszero(g) && continue
+
             # Generate the univariate polynomial corresponding to the generator
             coeff_pos = [exponent_vector(g, j)[i]+1 for j in 1:length(Oscar.terms(g))]
             coeffs = zeros(QQFieldElem, first(coeff_pos))

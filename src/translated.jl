@@ -4,7 +4,7 @@
 # (1) Johnston, M. D. Translated Chemical Reaction Networks. Bull Math Biol 2014, 76 (5), 1081–1116. https://doi.org/10.1007/s11538-014-9947-5.
  
 # Struct representing a network translation.
-Base.@kwdef mutable struct Translation{T <: Integer}
+mutable struct Translation{T <: Integer}
     """The original reaction network."""
     rn::ReactionSystem
     """The complex-composition matrix of the translated reaction network."""
@@ -13,11 +13,19 @@ Base.@kwdef mutable struct Translation{T <: Integer}
     D_T::Matrix{T}
     """Vector X where X[i] gives the index of the complex that i was translated into."""
     translatedcomplexmap::Vector{T}
-    checkedrev::Bool = false
-    isweaklyrev::Bool = true
-    linkageclasses::Vector{Vector{T}} = Vector{Vector{T}}(undef, 0)
-    effectivedeficiency::T = -1
-    kineticdeficiency::T = -1
+    checkedrev::Bool
+    isweaklyrev::Bool
+    """Linkage classes of the translated network."""
+    linkageclasses::Vector{Vector{T}}
+    """Deficiency of the translated network's reaction graph."""
+    effectivedeficiency::T
+    """Deficiency of the graph formed by the kinetic complexes."""
+    kineticdeficiency::T
+end
+
+function Translation(rn, Y_T, D_T, tcmap) 
+    T = eltype(Y_T)
+    Translation(rn, Y_T, D_T, tcmap, false, true, Vector{Vector{T}}(undef, 0), -1, -1) 
 end
 
 """
@@ -37,12 +45,14 @@ function WRDZ_translation(rn::ReactionSystem)
 
     nums = size(Y_K, 1)
     (numc, numr) = size(D)
-    Λ = zeros(Int, nums, numr) # the set of translation complexes
+    # The set of translation complexes that get added to each reaction.
+    Λ = zeros(Int, nums, numr) 
     
     P1 = Set(collect(1:numr))
     P2 = Set{Int64}()
     P3 = Set{Int64}()
 
+    rcmap = CatalystNetworkAnalysis.reactiontocomplexmap(rn)
     while true
         @label step_2
         i = pop!(P1)
@@ -51,57 +61,44 @@ function WRDZ_translation(rn::ReactionSystem)
 
         # Update reactant complexes
         @label step_3
-        rxs = findall(==(1), @view rr_adj[i, :])
-        for j in rxs
-            p = findfirst(==(1), @view D[:, i])
-            s = findfirst(==(-1), @view D[:, j])
+        for i in P2
+            rxs = findall(==(1), @view rr_adj[i, :])
+            for j in rxs
+                j ∈ P1 || continue
+                p = rcmap[i].second
+                s = rcmap[j].first
 
-            for k in 1:size(Y_T, 1)
-                Λ[k, j] = Y_K[k, p] - Y_K[k, s] + Λ[k, i]
+                Λ[:,j] = Y_K[:,p] - Y_K[:,s] + Λ[:,i]
+                setdiff!(push!(P3, j), P2)
             end
-            setdiff!(union!(P3, j), P2)
         end
 
         !isempty(P3) && begin
-            P2 = copy(P3)
+            P2, P3 = P3, P2
             setdiff!(P1, P2)
             empty!(P3)
             @goto step_3
         end
 
         !isempty(P1) && @goto step_2
-        isempty(P3) && isempty(P1) && break
+        break
     end
+    display(Λ)
 
-    rcmap = CatalystNetworkAnalysis.reactiontocomplexmap(rn)
+    # Update the Y_T by adding the translation complexes
+    translated = Set{Int}()
     for i in 1:numr
         s = rcmap[i].first
         p = rcmap[i].second
 
-        @. Y_T[:,s] += Λ[:,i]
-        @. Y_T[:,p] += Λ[:,i]
-    end
-
-    # If any translated complex has negative amounts of some species, add a complex to each member of its linkage class 
-    any(<(0), Y_T) && begin
-        lcs = Catalyst.linkageclasses(rn)
-
-        for lc in lcs
-            complexes = @view Y_T[:, lc]
-            negidxs = findall(<(0), complexes)
-            negvals = complexes[negidxs]
-            specidxs = map(x->x.I[1], negidxs)
-
-            addcomplex = zeros(Int, nums)
-            addcomplex[specidxs] .= -negvals
-
-            for c in lc
-                @. Y_T[:,c] += addcomplex
-            end
-        end
+        s ∈ translated || @. Y_T[:,s] += Λ[:,i]
+        p ∈ translated || @. Y_T[:,p] += Λ[:,i]
+        push!(translated, s, p)
     end
 
     _Y_T = reduce(hcat, unique(eachcol(Y_T)))
+    display(_Y_T)
+
     translatedcmap = zeros(Int, numc)
     for i in 1:numc
         j = findfirst(==(Y_T[:, i]), eachcol(_Y_T))
@@ -116,7 +113,25 @@ function WRDZ_translation(rn::ReactionSystem)
         D_T[translatedcmap[p], i] = 1
     end
 
-    return Translation(rn = rn, Y_T = _Y_T, D_T = D_T, translatedcomplexmap = translatedcmap)
+    # If any final complexes are not non-negative, add a pseudo-complex to each member of the linkage class 
+    any(<(0), _Y_T) && begin
+        img = Catalyst.incidencematgraph(D_T)
+        lcs = Catalyst.linkageclasses(img)
+
+        for lc in lcs
+            complexes = @view _Y_T[:, lc]
+            addcomplex = map(eachrow(complexes)) do row
+                min = minimum(row)
+                min > 0 ? 0 : -min
+            end
+
+            for c in lc
+                @. _Y_T[:,c] += addcomplex
+            end
+        end
+    end
+
+    return Translation(rn, _Y_T, D_T, translatedcmap)
 end
 
 # Construct a reaction-reaction graph that is common-source compatible and elementary mode compatible. Return an adjacency matrix.
@@ -230,10 +245,10 @@ function isweaklyreversible(trn::Translation)
 
     for lc in linkageclasses(trn)
         sg, _ = Graphs.induced_subgraph(g, lc)
-        Graphs.is_strongly_connected(sg) || (trn.weaklyrev = false)
+        Graphs.is_strongly_connected(sg) || (trn.isweaklyrev = false)
     end
     trn.checkedrev = true
-    trn.weaklyrev
+    trn.isweaklyrev
 end
 
 function linkageclasses(trn::Translation) 
