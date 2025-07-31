@@ -9,7 +9,7 @@ using Satisfiability # For siphon detection
 using Oscar
 
 # Linear programming (for concordance + deficiency)
-using JuMP, HiGHS 
+using JuMP, HiGHS
 const M::Float64 = 1E4
 const ϵ::Float64 = 1E-4
 
@@ -39,7 +39,7 @@ include("lp_utils.jl")
 include("cycles.jl")
 export elementary_flux_modes
 
-include("translated.jl") 
+include("translated.jl")
 export WRDZ_translation, symbolic_steady_states
 
 end

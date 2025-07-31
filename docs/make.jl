@@ -1,5 +1,5 @@
 using Documenter
-using CatalystNetworkAnalysis, Catalyst 
+using CatalystNetworkAnalysis, Catalyst
 
 makedocs(
     sitename = "CatalystNetworkAnalysis.jl",
@@ -17,6 +17,6 @@ makedocs(
 )
 
 deploydocs(
-   repo = "github.com/SciML/CatalystNetworkAnalysis.jl.git";
-   push_preview = true
+    repo = "github.com/SciML/CatalystNetworkAnalysis.jl.git";
+    push_preview = true
 )

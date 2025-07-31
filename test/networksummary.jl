@@ -9,8 +9,8 @@ rng = StableRNG(444)
 # Correctness tests for the NetworkSummary function for a large set of mass action SBML networks
 # Ground truths
 networks = [MAPK, zigzag, EnvZ_OmpR,
-            his_kinase, oneSitePhosphorylation(10),
-            cellDeathNetwork(10), edelstein(10)]
+    his_kinase, oneSitePhosphorylation(10),
+    cellDeathNetwork(10), edelstein(10)]
 
 # Test the correctness of each function.
 # 1) For concentration-robust networks, find a witness for concentration robustness
@@ -35,7 +35,7 @@ for (name, network) in ma_nets
     push!(num_specs, length(species(rn)))
 
     println("Computing steady states for $name")
-    nss = hc_steady_states(rn, ps = p; u0) 
+    nss = hc_steady_states(rn, ps = p; u0)
     if ns.steadystates == :STRUCTURALLY_UNIQUE || :KINETICALLY_UNIQUE
         @test length(nss) == 1
     elseif ns.steadystates == :STRUCTURALLY_MULTIPLE || :KINETICALLY_MULTIPLE
@@ -52,7 +52,7 @@ for (name, network) in ma_nets
         rs = rn.robustspecies
         nl1 = NonlinearProblem(rn, u_guess = u0, p)
         ss1 = sol(nl1)
-        
+
         randinit = rand(length(u0))
         randu0 = Dict(zip(species(rn), randinit))
         nl2 = NonlinearProblem(rn, u_guess = randu0, p)

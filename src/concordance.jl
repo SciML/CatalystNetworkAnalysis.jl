@@ -1,5 +1,5 @@
 # Given a reaction network, add concordance constraints to the linear programming model.
-function add_concordance_constraints(model, rn::ReactionSystem) 
+function add_concordance_constraints(model, rn::ReactionSystem)
     α = model[:α]
     σ = model[:σ]
     iszer = model[:σ_iszero]
@@ -49,9 +49,9 @@ end
 """
     isconcordant(rn::ReactionSystem, atol=1e-12)
 
-Given a reaction network (and an absolute tolerance for the nullspace matrix below which entries should be zero), test whether the reaction network's graph has a property called concordance. A concordant network will not admit multiple equilibria in any stoichiometric compatibility class. The algorithm for this check follows Haixia Ji's PhD thesis, (Ji, 2011).  
+Given a reaction network (and an absolute tolerance for the nullspace matrix below which entries should be zero), test whether the reaction network's graph has a property called concordance. A concordant network will not admit multiple equilibria in any stoichiometric compatibility class. The algorithm for this check follows Haixia Ji's PhD thesis, (Ji, 2011).
 """
-function isconcordant(rn::ReactionSystem) 
+function isconcordant(rn::ReactionSystem)
     S = netstoichmat(rn)
 
     numcols, kerS = nullspace_right_rational(ZZMatrix(S))
@@ -66,7 +66,7 @@ function isconcordant(rn::ReactionSystem)
     #   2. If α[r] == 0 for some reaction r, either σ[s] == 0 for all s in the reactant complex, 
     #   3. or else there are two species s1, s2 in the reactant complex for which sign(σ[s1]) != sign(σ[s2])
 
-    model = add_sign_constraints(S; var_name = "σ") 
+    model = add_sign_constraints(S; var_name = "σ")
     add_subspace_constraints(kerS; model, var_name = "α")
     add_concordance_constraints(model, rn)
 
@@ -79,22 +79,24 @@ end
 ###############################
 
 # Given a sign pattern for σ, return the partial sign pattern for α and the indices that are free
-function generate_α_signpattern(rn::ReactionSystem, σ::Vector) 
-    S = netstoichmat(rn); (n, r) = size(S)
+function generate_α_signpattern(rn::ReactionSystem, σ::Vector)
+    S = netstoichmat(rn);
+    (n, r) = size(S)
 
     # Free indices are ones that are unassigned, based on the sign pattern of σ. 
-    α_sp = Int64[]; freeindices = Int64[]
+    α_sp = Int64[];
+    freeindices = Int64[]
 
-    for rxn in 1:r 
+    for rxn in 1:r
         supp = findall(<(0), @view S[:, rxn])
 
         # To be a discordance, α must be 0 whenever all the species in the reactant complex are 0 in σ, 
         # and positive (negative) if they are all greater than (less than) or equal to 0. Otherwise, we impose no restrictions.  
-        if all(==(0), σ[supp]) 
+        if all(==(0), σ[supp])
             push!(α_sp, 0)
-        elseif all(>=(0), σ[supp]) 
-            push!(α_sp, 1) 
-        elseif all(<=(0), σ[supp]) 
+        elseif all(>=(0), σ[supp])
+            push!(α_sp, 1)
+        elseif all(<=(0), σ[supp])
             push!(α_sp, -1)
         else
             push!(freeindices, rxn)
@@ -105,11 +107,12 @@ function generate_α_signpattern(rn::ReactionSystem, σ::Vector)
 end
 
 # Check if a vector v is sign-compatible with the image space of a matrix S
-function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64}=Int[], NL = false)
+function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64} = Int[], NL = false)
     n, m = size(S)
 
     if length(v) + length(freeindices) != n
-        error("The number of free signs and assigned signs does not sum to the length of the vector.") end
+        error("The number of free signs and assigned signs does not sum to the length of the vector.")
+    end
 
     assignedindices = deleteat!(collect(1:n), freeindices)
     model = Model(HiGHS.Optimizer)
@@ -123,16 +126,17 @@ function issigncompatible(S::Matrix, v::Vector; freeindices::Vector{Int64}=Int[]
     @variable(model, coeffs[1:m])
     @objective(model, Min, 0)
 
-    @constraint(model, (S*coeffs)[zeroindices] == zeros(length(zeroindices)))
-    @constraint(model, (S*coeffs)[posindices] >= ones(length(posindices)))
-    @constraint(model, (S*coeffs)[negindices] <= -ones(length(negindices)))
+    @constraint(model, (S * coeffs)[zeroindices] == zeros(length(zeroindices)))
+    @constraint(model, (S * coeffs)[posindices] >= ones(length(posindices)))
+    @constraint(model, (S * coeffs)[negindices] <= -ones(length(negindices)))
 
     optimize!(model)
     is_solved_and_feasible(model) ? true : false
 end
 
-function isconcordant_old(rn::ReactionSystem, atol=1e-12) 
-    S = netstoichmat(rn); (n, r) = size(S)
+function isconcordant_old(rn::ReactionSystem, atol = 1e-12)
+    S = netstoichmat(rn);
+    (n, r) = size(S)
 
     numcols, kerS = nullspace_right_rational(ZZMatrix(S))
     kerS = Matrix{Int}(kerS[:, 1:numcols])
@@ -145,18 +149,18 @@ function isconcordant_old(rn::ReactionSystem, atol=1e-12)
     sp = Int64[]
 
     # Initialize the model. 
-    model = signconstraintmodel(S, var = "σ") 
+    model = signconstraintmodel(S, var = "σ")
     signconstraintmodel(kerS, model = model, var = "α", in_subspace = true)
     addconcordanceconstraints(model, S)
-    
+
     # We check this by checking every possible sign pattern for σ by traversing a tree. 
     # Move forward until reaching a leaf node or an incompatible sign pattern for σ, then backtrack.  
-   
-    while true 
+
+    while true
         println(sp)
 
         # Check whether the sign pattern for σ is compatible with image(S)
-        if issigncompatible(S, sp, model, freeindices = collect(length(sp)+1:n))
+        if issigncompatible(S, sp, model, freeindices = collect((length(sp) + 1):n))
 
             # If we have reached a leaf node of the tree, we have found a σ sign pattern compatible with image(S).
             if length(sp) == n
@@ -170,7 +174,8 @@ function isconcordant_old(rn::ReactionSystem, atol=1e-12)
                 α_sp, freeidxs = generate_α_signpattern(rn, sp)
 
                 # If the α sign pattern is compatible with ker(S), then we have found a discordance, and we return false for discordant. 
-                issigncompatible(kerS, α_sp, freeindices = freeidxs) ? (return false) : (sp = movebackward(sp, fixedsigns))
+                issigncompatible(kerS, α_sp, freeindices = freeidxs) ? (return false) :
+                (sp = movebackward(sp, fixedsigns))
 
             else
                 # If we are not at a leaf node, and our partial sign pattern for σ is compatible with image(S), continue down the path. 
@@ -186,7 +191,7 @@ end
 
 # Move forward simply adds + signs to the sign pattern, unless the species is a fixed sign, in which case we add 0. 
 
-function moveforward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64}, n::Int64) 
+function moveforward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64}, n::Int64)
     while length(signpattern) + 1 ∈ fixedsigns
         push!(signpattern, 0)
     end
@@ -197,7 +202,9 @@ end
 # Move backward triggers whenever we find a sign-pattern that is not compatible with image(S), pruning those branches of the tree
 
 function movebackward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64})
-    if signpattern == [] return [] end
+    if signpattern == []
+        return []
+    end
 
     # If we are currently at a fixed sign
     if length(signpattern) ∈ fixedsigns
@@ -221,7 +228,7 @@ function movebackward(signpattern::Vector{Int64}, fixedsigns::Vector{Int64})
         end
     end
 end
-    
+
 # TODO: Compute concordance based on the speices-reaction graph and extensions. 
 
 # function isstronglyconcordant(rn::ReactionSystem) 

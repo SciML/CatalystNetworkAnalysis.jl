@@ -44,9 +44,9 @@ let
     # Test common source reactions are found correctly
     S = netstoichmat(zigzag)
     csr = C.common_source_reactions(zigzag)
-    csr_true = [[2,3],
-                [9,10,13],
-                [18,19]]
+    csr_true = [[2, 3],
+        [9, 10, 13],
+        [18, 19]]
     @test issetequal(csr, csr_true)
 
     # Test elementary flux modes 
@@ -55,31 +55,31 @@ let
 
     efm_supports = [findall(>(0), efm) for efm in eachcol(efms)]
     efm_parts = C.efm_partitions(zigzag, efm_supports, csr)
-    efm_true = [[1,2,3,4,5],
-                [6,7],
-                [8,9,10,11,12,13,14,15,16,17,18,19],
-                [20,21]]
+    efm_true = [[1, 2, 3, 4, 5],
+        [6, 7],
+        [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+        [20, 21]]
 
     @test all(issetequal.(efm_parts, efm_true))
 
     rrg_mat = C.construct_rr_graph(zigzag)
 
     # CS constraints
-    for rs in csr 
+    for rs in csr
         edges = rrg_mat[:, rs[1]]
         @test all(==(edges), eachcol(rrg_mat[:, rs]))
     end
 
     # Partition constraints
     ccs = connected_components(SimpleDiGraph(rrg_mat))
-    @test all(issetequal.(ccs, efm_parts)) 
-    
+    @test all(issetequal.(ccs, efm_parts))
+
     # EFM constraints
     for supp in efm_supports
         l = length(supp)
         part = @view rrg_mat[supp, supp]
-        @test sum(part, dims=2) == ones(Bool, l, 1)
-        @test sum(part, dims=1) == ones(Bool, 1, l)
+        @test sum(part, dims = 2) == ones(Bool, l, 1)
+        @test sum(part, dims = 1) == ones(Bool, 1, l)
         @test length(connected_components(Graphs.SimpleDiGraph(part))) == 1
     end
 
@@ -97,7 +97,7 @@ let
         k6, XpK --> Xpp + K
         (k7, k8), Xpp + M <--> XppM
         k9, XppM --> XpM
-        (k10, k11), XpM <--> Xp + M 
+        (k10, k11), XpM <--> Xp + M
         (k12, k13), Xp + M <--> Xp_M
         k14, Xp_M --> XM
         (k15, k16), XM <--> X + M
@@ -105,11 +105,11 @@ let
 
     S = netstoichmat(MAPK)
     csr = C.common_source_reactions(MAPK)
-    csr_true = [[2,3],
-                [5,6],
-                [8,9],
-                [11,12],
-                [13,14]]
+    csr_true = [[2, 3],
+        [5, 6],
+        [8, 9],
+        [11, 12],
+        [13, 14]]
     @test all(issetequal.(csr, csr_true))
 
     efms = C.elementary_flux_modes(MAPK)
@@ -122,21 +122,21 @@ let
     rrg_mat = C.construct_rr_graph(MAPK)
 
     # CS constraints
-    for rs in csr 
+    for rs in csr
         edges = rrg_mat[:, rs[1]]
         @test all(==(edges), eachcol(rrg_mat[:, rs]))
     end
 
     # Partition constraints
     ccs = connected_components(SimpleDiGraph(rrg_mat))
-    @test all(issetequal.(ccs, efm_parts)) 
-    
+    @test all(issetequal.(ccs, efm_parts))
+
     # EFM constraints
     for supp in efm_supports
         l = length(supp)
         part = @view rrg_mat[supp, supp]
-        @test sum(part, dims=2) == ones(Bool, l, 1)
-        @test sum(part, dims=1) == ones(Bool, 1, l)
+        @test sum(part, dims = 2) == ones(Bool, l, 1)
+        @test sum(part, dims = 1) == ones(Bool, 1, l)
         @test length(connected_components(Graphs.SimpleDiGraph(part))) == 1
     end
 

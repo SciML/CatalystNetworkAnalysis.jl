@@ -1,4 +1,4 @@
-VarMapType = Union{Vector{P}, Dict, Tuple{P}} where P <: Pair
+VarMapType = Union{Vector{P}, Dict, Tuple{P}} where {P <: Pair}
 
 # Struct summarizing the dynamic information of the reaction network, including its capacity for
 # multiple equilibria, concentration robustness, and persistence. 
@@ -6,7 +6,7 @@ mutable struct NetworkSummary
     steadystates::Symbol
     concentrationrobust::Symbol
     persistent::Symbol
-    mixedvolume::Int 
+    mixedvolume::Int
 end
 
 """
@@ -20,32 +20,34 @@ end
 
     Mixed volume may take a very long time to run and is disabled by default. It can be enabled by setting the flag `mv = true`. Note that mixed volume requires an initial condition. 
 """
-function networksummary(rn::ReactionSystem; p::VarMapType = rn.defaults, u0::VarMapType = Dict(), mv = false) 
-    all(r -> ismassaction(r, rn), reactions(rn)) || error("The network summary analysis currently only works for mass-action networks with integer coefficients.")
+function networksummary(rn::ReactionSystem; p::VarMapType = rn.defaults, u0::VarMapType = Dict(), mv = false)
+    all(r -> ismassaction(r, rn), reactions(rn)) ||
+        error("The network summary analysis currently only works for mass-action networks with integer coefficients.")
 
     # Structural Properties. 
     eq = hasuniquesteadystates(rn; p = p)
     acr = isconcentrationrobust(rn; p = p)
     mv = if (isempty(u0) || !mv)
-            -1 
-        else
-            mixedvolume(rn, u0)
-        end
+        -1
+    else
+        mixedvolume(rn, u0)
+    end
     pers = ispersistent(rn)
 
     NetworkSummary(eq, acr, pers, mv)
 end
 
-function Base.show(ns::NetworkSummary) 
-    printstyled("Number of Steady States", bold=true); println()
+function Base.show(ns::NetworkSummary)
+    printstyled("Number of Steady States", bold = true);
+    println()
     if ns.steadystates == :STRUCTURALLY_UNIQUE
         println("This reaction network will have a unique steady-state for every stoichiometric compatibility class, for every choice of rate constants. If the network is deficiency zero, this steady-state will additionally be asymptotically stable.")
     elseif ns.steadystates == :KINETICALLY_UNIQUE
         println("The number of steady states will depend on the rate constants. For the choice given,")
     elseif ns.steadystates == :POSSIBLY_MULTIPLE
-        println("Inconclusive whether the system can admit multiple steady states; will depend on the rate constants. One could try obtaining the steady states from HomotopyContinuation. Note that the number of steady states depends in general on the choice of initial condition.") 
-        if ns.mv >= 0 
-            println("The number of steady states with this initial condition will not exceed $(ns.mv).") 
+        println("Inconclusive whether the system can admit multiple steady states; will depend on the rate constants. One could try obtaining the steady states from HomotopyContinuation. Note that the number of steady states depends in general on the choice of initial condition.")
+        if ns.mv >= 0
+            println("The number of steady states with this initial condition will not exceed $(ns.mv).")
         end
     elseif ns.steadystates == :DEFINITELY_MULTIPLE
         println("This network is guaranteed to have an initial condition for which there are multiple steady states, for any choice of rate constants. Try running a stability analysis.")
@@ -58,7 +60,9 @@ function Base.show(ns::NetworkSummary)
         error("Unrecognized status message for multiple steady states.")
     end
 
-    println(); printstyled("Concentration Robustness", bold=true); println()
+    println();
+    printstyled("Concentration Robustness", bold = true);
+    println()
 
     if ns.concentrationrobust == :MASS_ACTION_ACR
         println("This reaction network has absolute concentration robustness in at least one species for this set of rate parameters. The concentration of this species will be constant ns.concentrationrobustoss all steady states for the system. To see the indices of species that are concentration robust, please query nps.robustspecies.")
@@ -70,7 +74,9 @@ function Base.show(ns::NetworkSummary)
         println("This reaction network does not possess absolute concentration robustness in any species, for any set of rate constants.")
     end
 
-    println(); printstyled("Persistence", bold=true); println()
+    println();
+    printstyled("Persistence", bold = true);
+    println()
     if ns.persistent == :PERSISTENT
         println("This reaction network is persistent. Any species that is initially present in the reaction mixture will not die out (have its concentration reduced to zero.")
     elseif ns.persistent == :NOT_PERSISTENT
@@ -90,8 +96,7 @@ end
     - :KINETICALLY_MULTIPLE - multiple steady states in a certain SCC guaranteed for certain choices of rate constants
     - :POSSIBLY_MULTIPLE - discordant and/or high deficiency, but inconclusive whether there are system parameters that lead to the existence of an SCC with multiple steady states. 
 """
-function hasuniquesteadystates(rn::ReactionSystem; p::VarMapType = Dict(), u0::VarMapType = Dict()) 
-
+function hasuniquesteadystates(rn::ReactionSystem; p::VarMapType = Dict(), u0::VarMapType = Dict())
     nps = Catalyst.get_networkproperties(rn)
     complexes, D = reactioncomplexes(rn)
     δ = Catalyst.deficiency(rn)
@@ -99,33 +104,35 @@ function hasuniquesteadystates(rn::ReactionSystem; p::VarMapType = Dict(), u0::V
     # haspositivesteadystates(rn) || return :NO_EQUILIBRIUM
 
     # Deficiency zero theorem 
-    δ == 0 && (if isweaklyreversible(rn, subs) 
-                  return :STRUCTURALLY_UNIQUE
-              else
-                  return :NO_EQUILIBRIUM
-              end)
+    δ == 0 && (if isweaklyreversible(rn, subs)
+        return :STRUCTURALLY_UNIQUE
+    else
+        return :NO_EQUILIBRIUM
+    end)
 
     # Deficiency one networks
-    Catalyst.satisfiesdeficiencyone(rn) && return :STRUCTURALLY_UNIQUE 
-    δ == 1 && (if deficiencyonealgorithm(rn) 
-                   return :KINETICALLY_MULTIPLE 
-               else
-                   return :STRUCTURALLY_UNIQUE
-               end)
+    Catalyst.satisfiesdeficiencyone(rn) && return :STRUCTURALLY_UNIQUE
+    δ == 1 && (if deficiencyonealgorithm(rn)
+        return :KINETICALLY_MULTIPLE
+    else
+        return :STRUCTURALLY_UNIQUE
+    end)
 
     # Higher deficiency networks
     concordant = isconcordant(rn)
-    concordant && return :STRUCTURALLY_UNIQUE 
+    concordant && return :STRUCTURALLY_UNIQUE
     !concordant && ispositivelydependent(rn) && return :STRUCTURALLY_MULTIPLE
 
     # higherdeficiencyalgorithm(rn) && return :KINETICALLY_MULTIPLE 
-    
+
     # Kinetic properties
     if !isempty(p)
-        length(p) != length(parameters(rn)) && error("The length of the parameter map is not equal to the number of parameters in the reaction network.")
-        (Catalyst.iscomplexbalanced(rn, params) || Catalyst.isdetailedbalance(rn, params)) && return :KINETICALLY_UNIQUE  
+        length(p) != length(parameters(rn)) &&
+            error("The length of the parameter map is not equal to the number of parameters in the reaction network.")
+        (Catalyst.iscomplexbalanced(rn, params) ||
+         Catalyst.isdetailedbalance(rn, params)) && return :KINETICALLY_UNIQUE
     end
-    
+
     return :POSSIBLY_MULTIPLE
 end
 
@@ -136,18 +143,18 @@ end
 
     Checks whether the reaction system will have any positive steady states, i.e. steady states for which the concentration of each species is positive. 
 """
-function haspositivesteadystates(rn::ReactionSystem) 
+function haspositivesteadystates(rn::ReactionSystem)
     subs = subnetworks(rn)
     isweaklyreversible(rn) && return true
     !isconsistent(rn) && return false
 end
- 
+
 """
     haspositivesteadystates(rn::ReactionSystem)
 
     Checks whether the reaction system will have any periodic solutions. 
 """
-function hasperiodicsolutions(rn::ReactionSystem) 
+function hasperiodicsolutions(rn::ReactionSystem)
     isconservative(rn) && false
 end
 
@@ -155,27 +162,29 @@ end
 # STEADY STATES IN A PARTICULAR STOICHIOMETRIC COMPATIBILITY CLASS #
 ####################################################################
 
-
 """
     SFR(rn::ReactionSystem; u0, p) 
-    
+
     Takes in a reaction network, and returns a symbolic function that evaluates the species formation rate function, which can be used to create steady state polynomials in the desired output type (be it Symbolic, DynamicPolynomial, or QQPolyElem for abstract algebra calculations). 
 
     Optionally takes an initial condition (which is used to compute conservation laws) and a parameter map as arguments. These maps must be a dictionary, vector, or tuple of variable-to-value mappings, e.g. [:k1 => 1., :k2 => 2., ...]
 """
 function SFR(rn::ReactionSystem; u0::VarMapType = Dict(), p::VarMapType = Dict())
-    specs = species(rn); conslaws = conservationlaws(rn) 
+    specs = species(rn);
+    conslaws = conservationlaws(rn)
     sfr = if isempty(u0)
         Catalyst.assemble_oderhs(rn, specs, remove_conserved = false, combinatoric_ratelaws = false)
     else
         Catalyst.assemble_oderhs(rn, specs, remove_conserved = true, combinatoric_ratelaws = false)
     end
 
-    !isa(u0, Dict) && (u0 = Dict(u0)); !isa(p, Dict) && (p = Dict(p))
-    
+    !isa(u0, Dict) && (u0 = Dict(u0));
+    !isa(p, Dict) && (p = Dict(p))
+
     # Substitute initial conditions. 
-    if !isempty(u0) 
-        (length(u0) != length(specs)) && error("Length of initial condition does not equal number of species.")
+    if !isempty(u0)
+        (length(u0) != length(specs)) &&
+            error("Length of initial condition does not equal number of species.")
         u0 = symmap_to_varmap(rn, u0)
         cons_constants = Catalyst.conservationlaw_constants(rn)
         Γ_vals = Vector{Float64}()
@@ -191,7 +200,8 @@ function SFR(rn::ReactionSystem; u0::VarMapType = Dict(), p::VarMapType = Dict()
     # Substitute parameters.
     if !isempty(p)
         p = symmap_to_varmap(rn, p)
-        (length(p) != length(parameters(rn))) && error("Length of parameter assignments does not equal number of parameters.")
+        (length(p) != length(parameters(rn))) &&
+            error("Length of parameter assignments does not equal number of parameters.")
         for i in 1:length(sfr)
             sfr[i] = Symbolics.substitute(sfr[i], p)
         end
@@ -208,16 +218,18 @@ end
 
     Construct the modified SFR for the mixed volume and injectivity. Differs from the other SFR function in that certain species' rates get replaced with conservation laws, but not substituted out altogether. 
 """
-function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict()) 
-    conslaws = conservationlaws(rn) 
+function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
+    conslaws = conservationlaws(rn)
     d, ZZconslaws = Oscar.rref(ZZMatrix(conslaws))
     considxs = [findfirst(!=(0), conslaws[i, :]) for i in 1:d]
     conslaws = Matrix{Int64}(ZZconslaws)
 
-    sm = speciesmap(rn); u0vec = zeros(length(species(rn)))
+    sm = speciesmap(rn);
+    u0vec = zeros(length(species(rn)))
     u0 = symmap_to_varmap(rn, Dict(u0))
     for spec in keys(sm)
-        i = sm[spec]; u0vec[i] = u0[spec]
+        i = sm[spec];
+        u0vec[i] = u0[spec]
     end
     c = conslaws*u0vec
 
@@ -225,7 +237,7 @@ function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
     specs = species(rn)
     sfr = Catalyst.assemble_oderhs(rn, specs)
     conserved_eqs = conslaws*specs - c
-     
+
     for (i, rx) in enumerate(considxs)
         sfr[rx] = conserved_eqs[i]
     end
@@ -236,17 +248,17 @@ function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
     return sfr_f
 end
 
-
 """
     mixedvolume(rn::ReactionSystem, u0::VarMapType)
 
     Compounds an upper bound on the number of steady states in a particular stoichiometric compatibility class. 
 """
 function mixedvolume(rn::ReactionSystem, u0::VarMapType)
-    (length(u0) != length(species(rn))) && error("The length of the initial condition must equal the number of species in the reaction network.")
+    (length(u0) != length(species(rn))) &&
+        error("The length of the initial condition must equal the number of species in the reaction network.")
     sfr_f = modifiedSFR(rn, u0)
     sfr = eval(sfr_f)
-    
+
     @polyvar s[1:length(species(rn))]
     @polyvar k[1:length(parameters(rn))]
 

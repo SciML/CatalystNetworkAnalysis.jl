@@ -9,7 +9,7 @@ MAPK = @reaction_network mapk begin
     k6, XpK --> Xpp + K
     (k7, k8), Xpp + M <--> XppM
     k9, XppM --> XpM
-    (k10, k11), XpM <--> Xp + M 
+    (k10, k11), XpM <--> Xp + M
     (k12, k13), Xp + M <--> Xp_M
     k14, Xp_M --> XM
     (k15, k16), XM --> X + M
@@ -35,7 +35,6 @@ zigzag = @reaction_network zigzag begin
     (k20, k21), X4 + X11 <--> X13
 end
 
-
 #####################################
 ### CONCENTRATION-ROBUST NETWORKS ###
 #####################################
@@ -60,7 +59,7 @@ WNT = @reaction_network WNT begin
     (k6, k7), X5 + X8 <--> X16
     k8, X16 --> X4 + X8
     (k9, k10), X4 + X10 <--> X18
-    k11, X18 --> X4 
+    k11, X18 --> X4
     (k12, k13), ∅ <--> X10
     (k14, k15), X3 + X6 <--> X15
     k16, X15 --> X3 + X7
@@ -101,17 +100,18 @@ acr_nets = [EnvZ_OmpR, WNT, his_kinase, feinberg_shinar_network]
 ###########################
 
 # Some reaction networks with multiple equilibria, drawn from Gross et al, 2020
-function oneSitePhosphorylation(n::Int64) 
-    rx = []; n = 10
+function oneSitePhosphorylation(n::Int64)
+    rx = [];
+    n = 10
     @species S(t)[0:n] X(t)[1:n] Y(t)[1:n] E(t) F(t)
-    @parameters k[1:n, 1:6] 
+    @parameters k[1:n, 1:6]
     for i in 1:n
-        push!(rx, Reaction(k[i, 1], [S[i-1], E], [X[i]], [1, 1], [1]))
-        push!(rx, Reaction(k[i, 2], [X[i]], [S[i-1], E], [1], [1, 1]))
+        push!(rx, Reaction(k[i, 1], [S[i - 1], E], [X[i]], [1, 1], [1]))
+        push!(rx, Reaction(k[i, 2], [X[i]], [S[i - 1], E], [1], [1, 1]))
         push!(rx, Reaction(k[i, 3], [S[i], F], [Y[i]], [1, 1], [1]))
         push!(rx, Reaction(k[i, 4], [Y[i]], [S[i], F], [1], [1, 1]))
         push!(rx, Reaction(k[i, 5], [X[i]], [S[i], E], [1], [1, 1]))
-        push!(rx, Reaction(k[i, 6], [Y[i]], [S[i-1], F], [1], [1, 1]))
+        push!(rx, Reaction(k[i, 6], [Y[i]], [S[i - 1], F], [1], [1, 1]))
     end
 
     @named osp = ReactionSystem(rx, t, [S..., X..., Y..., E, F], vec(k))
@@ -119,10 +119,11 @@ function oneSitePhosphorylation(n::Int64)
     osp
 end
 
-function edelstein(n::Int64) 
-    rx = []; n = 10
+function edelstein(n::Int64)
+    rx = [];
+    n = 10
     @species A(t) B(t) D(t)[1:n]
-    @parameters k[1:(4*n+2)]
+    @parameters k[1:(4 * n + 2)]
     push!(rx, Reaction(k[1], [A], [A], [1], [2]))
     push!(rx, Reaction(k[2], [A], [A], [2], [1]))
     for i in 1:n
@@ -137,10 +138,11 @@ function edelstein(n::Int64)
     edelstein
 end
 
-function cellDeathNetwork(n::Int64) 
-    rx = []; n = 10
+function cellDeathNetwork(n::Int64)
+    rx = [];
+    n = 10
     @species X(t) Y(t)
-    @parameters k[1:n, 1:n] 
+    @parameters k[1:n, 1:n]
     for i in 1:n
         for j in 1:n
             i >= j && continue
@@ -149,7 +151,7 @@ function cellDeathNetwork(n::Int64)
     end
     @named rs = ReactionSystem(rx, t)
     rs = complete(rs)
-    rs 
+    rs
 end
 
 #################################
@@ -169,4 +171,3 @@ for file in readdir(netdir)
         continue
     end
 end
-
