@@ -5,12 +5,12 @@ using StableRNGs
 rng = StableRNG(123)
 # moveforward and movebackward
 let
-    sp = [1,0,1,0,1,0]
-    fixedsigns = [6,7,8]
-    n = 8 
-    @test C.moveforward(sp, fixedsigns, n) == [1,0,1,0,1,0,0,0]
-    @test C.movebackward(sp, fixedsigns) == [1,0,1,0,-1]
-    @test C.movebackward(sp, fixedsigns) == [1,0,1,0,0]
+    sp = [1, 0, 1, 0, 1, 0]
+    fixedsigns = [6, 7, 8]
+    n = 8
+    @test C.moveforward(sp, fixedsigns, n) == [1, 0, 1, 0, 1, 0, 0, 0]
+    @test C.movebackward(sp, fixedsigns) == [1, 0, 1, 0, -1]
+    @test C.movebackward(sp, fixedsigns) == [1, 0, 1, 0, 0]
 
     sp2 = Int[]
     @test C.moveforward(sp2, fixedsigns, n) == [1]
@@ -20,15 +20,16 @@ end
 
 # sign compatibility tests
 let
-    S = [1 1 0; 
+    S = [1 1 0;
          0 1 0;
          1 0 0]
     n = 3
 
-    @test C.issigncompatible(S, Float64[], freeindices=collect(1:n)) == true
-    @test_throws "The number of free signs and assigned signs does not sum to the length of the vector." C.issigncompatible(S, Float64[])
-    @test C.issigncompatible(S, [1,1,1]) == true
-    @test C.issigncompatible(S, [-1,1,1]) == false
+    @test C.issigncompatible(S, Float64[], freeindices = collect(1:n)) == true
+    @test_throws "The number of free signs and assigned signs does not sum to the length of the vector." C.issigncompatible(
+        S, Float64[])
+    @test C.issigncompatible(S, [1, 1, 1]) == true
+    @test C.issigncompatible(S, [-1, 1, 1]) == false
 end
 
 # generating α sign patterns
@@ -53,18 +54,18 @@ let
     end
 
     σ_1 = [1, 0, -1]
-        #  A, B, P, C, Q
+    #  A, B, P, C, Q
     σ_2 = [0, 1, 1, 0, -1]
-        #  A, B, P, C, Q,  D, R
+    #  A, B, P, C, Q,  D, R
     σ_3 = [0, 0, 1, 1, -1, -1, 1]
 
-    @test C.generate_α_signpattern(rn, σ_1) == ([1,-1,0,1], Int[])
-    @test C.generate_α_signpattern(rn2, σ_2) == ([1,1,1,-1,0,0],Int[])
-    @test C.generate_α_signpattern(rn3, σ_3) == ([0,1,1,-1,1,-1,0], [5])
+    @test C.generate_α_signpattern(rn, σ_1) == ([1, -1, 0, 1], Int[])
+    @test C.generate_α_signpattern(rn2, σ_2) == ([1, 1, 1, -1, 0, 0], Int[])
+    @test C.generate_α_signpattern(rn3, σ_3) == ([0, 1, 1, -1, 1, -1, 0], [5])
 
     @test C.isconcordant(rn) == true
-    @test C.isconcordant(rn2) == false 
-    @test C.isconcordant(rn3) == true 
+    @test C.isconcordant(rn2) == false
+    @test C.isconcordant(rn3) == true
 end
 
 let

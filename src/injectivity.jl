@@ -12,8 +12,8 @@
 
     Determine whether a reaction network system is injective, i.e. will have at most one steady state.
 """
-function isinjective(rn::ReactionSystem) 
-    S = netstoichmat(rn)    
+function isinjective(rn::ReactionSystem)
+    S = netstoichmat(rn)
     Y = complexstoichmat(rn)
     D = incidencemat(rn)
     kerS = nullspace_right_rational(S)
@@ -23,13 +23,13 @@ function isinjective(rn::ReactionSystem)
     V = zeros(Int64, r, s)
 
     for i in 1:length(reactions(rn))
-        src = findfirst(==(-1), @view D[:, i]) 
+        src = findfirst(==(-1), @view D[:, i])
         V[i, :] .= Y[src, :]
     end
 
     model = add_sign_constraints(kerS, var_name = "x")
     add_sign_constraints(S; model, var_name = "y")
-    
+
     # Add injectivity constraints.
     x = model[:x]
     y = model[:y]
@@ -42,19 +42,19 @@ function isinjective(rn::ReactionSystem)
     #   V*y == 0 <--> x == 0
     #   V*y < 0 <--> x < 0
     @constraints(model, begin
-       # iszero = 1 --> x[i] == 0 <--> (V * y)[i] == 0
-       x + M * (ones(s) - iszer) ≥ zeros(s)
-       x - M * (ones(s) - iszer) ≤ zeros(s)
-       V*y + M * (ones(s) - iszer) ≥ zeros(s)
-       V*y - M * (ones(s) - iszer) ≤ zeros(s)
+        # iszero = 1 --> x[i] == 0 <--> (V * y)[i] == 0
+        x + M * (ones(s) - iszer) ≥ zeros(s)
+        x - M * (ones(s) - iszer) ≤ zeros(s)
+        V*y + M * (ones(s) - iszer) ≥ zeros(s)
+        V*y - M * (ones(s) - iszer) ≤ zeros(s)
 
-       # isnegative = 1 --> x[i] < 0 <--> (V * y)[i] < 0
-       x - M * (ones(s) - isneg) ≤ -ones(s) * ϵ
-       V*y - M * (ones(s) - isneg) ≤ -ones(s) * ϵ
+        # isnegative = 1 --> x[i] < 0 <--> (V * y)[i] < 0
+        x - M * (ones(s) - isneg) ≤ -ones(s) * ϵ
+        V*y - M * (ones(s) - isneg) ≤ -ones(s) * ϵ
 
-       # ispositive = 1 --> x[i] > 0 <--> (V * y)[i] > 0
-       x + M * (ones(s) - ispos) ≥ ones(s) * ϵ
-       V*y + M * (ones(s) - ispos) ≥ ones(s) * ϵ
+        # ispositive = 1 --> x[i] > 0 <--> (V * y)[i] > 0
+        x + M * (ones(s) - ispos) ≥ ones(s) * ϵ
+        V*y + M * (ones(s) - ispos) ≥ ones(s) * ϵ
     end)
 
     optimize!(model)

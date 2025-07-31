@@ -5,7 +5,7 @@ import CatalystNetworkAnalysis as C
 let
     a = rand(1:10, 10, 10)
     @test C.has_positive_solution(a)
-    
+
     b = -rand(1:10, 10, 10)
     @test C.has_positive_solution(b)
 
@@ -17,7 +17,7 @@ let
          1 1 -1 1
          1 1 1 -1]
     @test !C.has_positive_solution(b)
-    @test C.has_positive_solution(b, nonneg=true)
+    @test C.has_positive_solution(b, nonneg = true)
 end
 
 # Testing that extreme rays are properly identified.

@@ -20,7 +20,7 @@ let
         3, 2A --> 3A
         1, 3A --> 4A
     end
-    
+
     p1 = Dict([:α => 1.5, :β => 2.6])
     @test C.isconcentrationrobust(rn; p = p1) == :INCONCLUSIVE
     # this case has no acr
@@ -74,19 +74,19 @@ let
 
     S, D = CatalystNetworkAnalysis.removespec(rn, 2)
     @test S == [-2 2 0 0 0 0 1 -1 0 0;
-                 0 0 1 -1 1 0 0 0 0 0; 
-                 0 0 0 1 -1 -1 0 0 0 0;
-                 0 0 0 0 0 0 1 -1 0 0;
-                 0 0 0 0 0 0 0 1 1 -1]
+           0 0 1 -1 1 0 0 0 0 0;
+           0 0 0 1 -1 -1 0 0 0 0;
+           0 0 0 0 0 0 1 -1 0 0;
+           0 0 0 0 0 0 0 1 1 -1]
 
     @test CatalystNetworkAnalysis.deficiency(S, D) == 0
 
     S, D = CatalystNetworkAnalysis.removespec(rn, 3)
     @test S == [-2 2 0 0 0 0 1 -1 0 0;
-                 1 -1 -1 -1 1 2 -2 0 -2 2;
-                 0 0 0 1 -1 -1 0 0 0 0;
-                 0 0 0 0 0 0 1 -1 0 0;
-                 0 0 0 0 0 0 0 1 1 -1]
+           1 -1 -1 -1 1 2 -2 0 -2 2;
+           0 0 0 1 -1 -1 0 0 0 0;
+           0 0 0 0 0 0 1 -1 0 0;
+           0 0 0 0 0 0 0 1 1 -1]
 
     @test CatalystNetworkAnalysis.deficiency(S, D) == 1
 end

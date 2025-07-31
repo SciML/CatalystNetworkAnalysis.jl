@@ -10,7 +10,7 @@
 
     Follows the approach outlined in [Puente et al. 2023](https://arxiv.org/abs/2401.00078).
 """
-function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict()) 
+function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
     nps = Catalyst.get_networkproperties(rn)
     Catalyst.deficiency(rn) == 1 && !isempty(robustspecies_δ1(rn)) && return :GLOBAL_ACR
 
@@ -19,10 +19,11 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
     (length(species(rn)) == 1 || any(iszero, eachcol(complexstoichmat(rn)))) || begin
         for i in 1:length(species(rn))
             S, D = CatalystNetworkAnalysis.removespec(rn, i)
-            (Catalyst.deficiency(rn) == CatalystNetworkAnalysis.deficiency(S, D)) && begin
-                possibly_ACR = true
-                break
-            end
+            (Catalyst.deficiency(rn) == CatalystNetworkAnalysis.deficiency(S, D)) &&
+                begin
+                    possibly_ACR = true
+                    break
+                end
         end
         (possibly_ACR == false) && return :NO_ACR
     end
@@ -37,10 +38,12 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
 
     # Compute steady state ideal. 
     sfr_f = eval(C.SFR(rn; p = p))
-    R, polyvars = polynomial_ring(QQ, vcat(
-                     map(s -> Symbolics.tosymbol(s, escape=false), species(rn)), 
-                     map(p -> Symbolics.tosymbol(p), parameters(rn))
-                 )) 
+    R,
+    polyvars = polynomial_ring(QQ,
+        vcat(
+            map(s -> Symbolics.tosymbol(s, escape = false), species(rn)),
+            map(p -> Symbolics.tosymbol(p), parameters(rn))
+        ))
     sfr = sfr_f(polyvars...)
     specs = polyvars[1:numspecies(rn)]
 
@@ -66,7 +69,7 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
     r_ξ, ξ = polynomial_ring(QQ, :ξ)
 
     !isempty(p) && for i in 1:numspecies(rn)
-        IQ = Oscar.eliminate(I, vcat(specs[1:i-1], specs[i+1:end]))
+        IQ = Oscar.eliminate(I, vcat(specs[1:(i - 1)], specs[(i + 1):end]))
         for g in gens(IQ)
             iszero(g) && continue
 
@@ -76,14 +79,14 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
             coeffs[coeff_pos] .= Oscar.coefficients(g)
             poly = r_ξ(coeffs)
 
-            iszero(poly) && continue 
+            iszero(poly) && continue
             if Hecke.n_positive_roots(poly) == 1
                 push!(nps.robustspecies, i)
                 return :MASS_ACTION_ACR
             end
         end
     end
-    
+
     return :INCONCLUSIVE
 end
 
@@ -93,7 +96,7 @@ end
     Look for terms of the form x - α_i in the basis for the positive steady-state ideal. Their presence
     implies the existence of ACR in that species. 
 """
-function linearelements(I::Ideal, numspecies::Int) 
+function linearelements(I::Ideal, numspecies::Int)
     G = Oscar.groebner_basis(I)
     linearidxs = Vector{Int64}()
     for g in elements(G)
@@ -106,13 +109,12 @@ function linearelements(I::Ideal, numspecies::Int)
     return linearidxs
 end
 
-
 # TODO: Other methods. 
-    # Compute decompositions of the positive-restriction ideal
-    # Numerically checking for ACR
-    # Compute the steady-state parameterization, check for constant components. 
-    # Algorithm 6.1 for finding all pairs of ACR candidates
-    
+# Compute decompositions of the positive-restriction ideal
+# Numerically checking for ACR
+# Compute the steady-state parameterization, check for constant components. 
+# Algorithm 6.1 for finding all pairs of ACR candidates
+
 """
     robustspecies(rn::ReactionSystem)
 
@@ -139,6 +141,7 @@ function robustspecies_δ1(rn::ReactionSystem)
         robust_species = Int64[]
 
         for c_s in nonterminal_complexes, c_p in nonterminal_complexes
+
             (c_s >= c_p) && continue
             # Check the difference of all the combinations of complexes. The support is the set of indices that are non-zero 
             suppcnt = 0

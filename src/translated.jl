@@ -2,13 +2,13 @@
 # of deficiency theory to a much wider range of networks. 
 
 # (1) Johnston, M. D. Translated Chemical Reaction Networks. Bull Math Biol 2014, 76 (5), 1081–1116. https://doi.org/10.1007/s11538-014-9947-5.
- 
+
 # Struct representing a network translation.
 mutable struct Translation{T <: Integer}
     """The original reaction network."""
     rn::ReactionSystem
     """The complex-composition matrix of the translated reaction network."""
-    Y_T::Matrix{T} 
+    Y_T::Matrix{T}
     """The incidence matrix of the translated reaction network."""
     D_T::Matrix{T}
     """Vector X where X[i] gives the index of the complex that i was translated into."""
@@ -23,9 +23,9 @@ mutable struct Translation{T <: Integer}
     kineticdeficiency::T
 end
 
-function Translation(rn, Y_T, D_T, tcmap) 
+function Translation(rn, Y_T, D_T, tcmap)
     T = eltype(Y_T)
-    Translation(rn, Y_T, D_T, tcmap, false, true, Vector{Vector{T}}(undef, 0), -1, -1) 
+    Translation(rn, Y_T, D_T, tcmap, false, true, Vector{Vector{T}}(undef, 0), -1, -1)
 end
 
 """
@@ -35,7 +35,7 @@ end
 
     Returns `nothing` if no weakly-reversible deficiency-zero translation is possible.
 """
-function WRDZ_translation(rn::ReactionSystem) 
+function WRDZ_translation(rn::ReactionSystem)
     rr_adj = construct_rr_graph(rn)
     isnothing(rr_adj) && return nothing
 
@@ -46,8 +46,8 @@ function WRDZ_translation(rn::ReactionSystem)
     nums = size(Y_K, 1)
     (numc, numr) = size(D)
     # The set of translation complexes that get added to each reaction.
-    Λ = zeros(Int, nums, numr) 
-    
+    Λ = zeros(Int, nums, numr)
+
     P1 = Set(collect(1:numr))
     P2 = Set{Int64}()
     P3 = Set{Int64}()
@@ -68,7 +68,7 @@ function WRDZ_translation(rn::ReactionSystem)
                 p = rcmap[i].second
                 s = rcmap[j].first
 
-                Λ[:,j] = Y_K[:,p] - Y_K[:,s] + Λ[:,i]
+                Λ[:, j] = Y_K[:, p] - Y_K[:, s] + Λ[:, i]
                 setdiff!(push!(P3, j), P2)
             end
         end
@@ -91,8 +91,8 @@ function WRDZ_translation(rn::ReactionSystem)
         s = rcmap[i].first
         p = rcmap[i].second
 
-        s ∈ translated || @. Y_T[:,s] += Λ[:,i]
-        p ∈ translated || @. Y_T[:,p] += Λ[:,i]
+        s ∈ translated || @. Y_T[:, s] += Λ[:, i]
+        p ∈ translated || @. Y_T[:, p] += Λ[:, i]
         push!(translated, s, p)
     end
 
@@ -102,7 +102,7 @@ function WRDZ_translation(rn::ReactionSystem)
     translatedcmap = zeros(Int, numc)
     for i in 1:numc
         j = findfirst(==(Y_T[:, i]), eachcol(_Y_T))
-        translatedcmap[i] = j 
+        translatedcmap[i] = j
     end
 
     D_T = zeros(Int, size(_Y_T, 2), numr)
@@ -126,7 +126,7 @@ function WRDZ_translation(rn::ReactionSystem)
             end
 
             for c in lc
-                @. _Y_T[:,c] += addcomplex
+                @. _Y_T[:, c] += addcomplex
             end
         end
     end
@@ -135,7 +135,7 @@ function WRDZ_translation(rn::ReactionSystem)
 end
 
 # Construct a reaction-reaction graph that is common-source compatible and elementary mode compatible. Return an adjacency matrix.
-function construct_rr_graph(rn::ReactionSystem) 
+function construct_rr_graph(rn::ReactionSystem)
     # Do nothing for already WRDZ networks
     Catalyst.satisfiesdeficiencyzero(rn) && return nothing
 
@@ -144,7 +144,7 @@ function construct_rr_graph(rn::ReactionSystem)
 
     # Check that EFMs are unitary and cover R
     all(i -> (i==1 || i==0), EFMs) || return nothing
-    all(>(0), sum(EFMs, dims=2)) || return nothing
+    all(>(0), sum(EFMs, dims = 2)) || return nothing
 
     EFM_supports = [findall(>(0), efm) for efm in eachcol(EFMs)]
 
@@ -166,6 +166,7 @@ function construct_rr_graph(rn::ReactionSystem)
 
     # Partition constraint: no edges between different partitions.
     for i in 1:length(efm_parts), j in 1:length(efm_parts)
+
         (i == j || i > j) && continue
         @constraint(model, edge[efm_parts[i], efm_parts[j]] .== 0)
         @constraint(model, edge[efm_parts[j], efm_parts[i]] .== 0)
@@ -175,6 +176,7 @@ function construct_rr_graph(rn::ReactionSystem)
     # same incoming edges in the RR graph.
     for rxs in csrs
         for i in 1:length(rxs), j in 1:length(rxs)
+
             (i == j || i > j) && continue
             @constraint(model, edge[:, rxs[i]] - edge[:, rxs[j]] .== 0)
         end
@@ -199,10 +201,11 @@ function construct_rr_graph(rn::ReactionSystem)
     end
 
     optimize!(model)
-    is_solved_and_feasible(model) ? (return Matrix{Int64}(JuMP.value.(model[:edge]))) : (return nothing)
+    is_solved_and_feasible(model) ? (return Matrix{Int64}(JuMP.value.(model[:edge]))) :
+    (return nothing)
 end
 
-function common_source_reactions(rn::ReactionSystem) 
+function common_source_reactions(rn::ReactionSystem)
     D = incidencemat(rn)
     common_source_rxs = Vector{Vector{Int64}}()
     outgoing_rxs = Vector{Int64}()
@@ -227,10 +230,11 @@ function is_equiv_efm(efm1, efm2, csrs)
 end
 
 # Generate partitions of the reactions such that any two reactions in the same class are in the same EFM partition
-function efm_partitions(rn::ReactionSystem, efm_supports, csrs) 
+function efm_partitions(rn::ReactionSystem, efm_supports, csrs)
     # Collapse common elements of the partition
 
-    ccs = CatalystNetworkAnalysis.transitiveclosure(efm_supports, (efm1, efm2) -> is_equiv_efm(efm1, efm2, csrs))
+    ccs = CatalystNetworkAnalysis.transitiveclosure(
+        efm_supports, (efm1, efm2) -> is_equiv_efm(efm1, efm2, csrs))
     efm_parts = [union(efm_supports[cc]...) for cc in ccs]
 end
 
@@ -238,7 +242,7 @@ end
 
 # Network analysis for translations
 
-function isweaklyreversible(trn::Translation) 
+function isweaklyreversible(trn::Translation)
     trn.checkedrev && return trn.isweaklyrev
 
     g = Catalyst.incidencematgraph(trn.D_T)
@@ -251,13 +255,13 @@ function isweaklyreversible(trn::Translation)
     trn.isweaklyrev
 end
 
-function linkageclasses(trn::Translation) 
+function linkageclasses(trn::Translation)
     !isempty(trn.linkageclasses) && return trn.linkageclasses
     trn.linkageclasses = Graphs.connected_components(Catalyst.incidencematgraph(trn.D_T))
     trn.linkageclasses
 end
 
-function effectivedeficiency(trn::Translation) 
+function effectivedeficiency(trn::Translation)
     trn.effectivedeficiency >= 0 && return trn.effectivedeficiency
 
     rn = trn.rn
@@ -268,7 +272,7 @@ function effectivedeficiency(trn::Translation)
     trn.effectivedeficiency
 end
 
-function kineticdeficiency(trn::Translation) 
+function kineticdeficiency(trn::Translation)
     trn.kineticdeficiency >= 0 && return trn.kineticdeficiency
 
     rn = trn.rn

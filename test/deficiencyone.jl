@@ -114,18 +114,22 @@ let
     part = C.generatepartitions(rn)
     @test length(part) == 13 # (3^3 + 1)/2 - 1
     g = C.confluencevector(rn)
-    @test C.confluencevector(rn) ≈ [-1., 1., -1., 1., -1., 1., 1., -1., 1., -1.]
+    @test C.confluencevector(rn) ≈ [-1.0, 1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0]
     # U, M, L
-    
+
     correctpartition = [[1, 2, 7, 8, 9], [5, 10], [3, 4]]
     cutdict = C.cutlinkpartitions(rn)
 
-    Y = complexstoichmat(rn); S = netstoichmat(rn)
-    s, c = size(Y); r = size(S, 2)
-    
+    Y = complexstoichmat(rn);
+    S = netstoichmat(rn)
+    s, c = size(Y);
+    r = size(S, 2)
+
     # Initialization
-    model = Model(HiGHS.Optimizer); set_silent(model)
-    @variable(model, μ[1:s]); @variable(model, n)
+    model = Model(HiGHS.Optimizer);
+    set_silent(model)
+    @variable(model, μ[1:s]);
+    @variable(model, n)
     @objective(model, Min, 0)
 
     μ_sol, feasible = C.solveconstraints(rn, model, g, correctpartition, cutdict)
@@ -177,32 +181,31 @@ let
         (k5, k6), P <--> 0
         (k7, k8), 0 <--> Q
     end
-    
+
     @test all(C.isregular, [rn1, rn2, rn3]) == true
     @time @test C.deficiencyonealgorithm(rn1) == false
-    @time @test C.deficiencyonealgorithm(rn2) == true 
+    @time @test C.deficiencyonealgorithm(rn2) == true
     @time @test C.deficiencyonealgorithm(rn3) == false
-    @time @test C.deficiencyonealgorithm(rn4) == false 
-    @time @test C.deficiencyonealgorithm(rn5) == true 
-    @time @test C.deficiencyonealgorithm(rn6) == true 
+    @time @test C.deficiencyonealgorithm(rn4) == false
+    @time @test C.deficiencyonealgorithm(rn5) == true
+    @time @test C.deficiencyonealgorithm(rn6) == true
 end
-
 
 ### Higher Deficiency Algorithm
 let
     rn = @reaction_network begin
         (k1, k2), E1 + S1 <--> E1S1
-        (k3, k4), E1S1 <--> E1 + S2 
+        (k3, k4), E1S1 <--> E1 + S2
         (k5, k6), E1 + S2 <--> E1S2
         k7, E1S2 --> E1 + S3
 
         (g1, g2), E2 + S3 <--> E2S3
-        g3, E2S3 --> E2 + S2 
+        g3, E2S3 --> E2 + S2
         (g5, g6), E2 + S2 <--> E2S2
         g7, E2S2 --> E2 + S1
-        
+
         (f1, f2), E3 + S1 <--> E3S1
-        f3, E3S1 --> E3 + S3 
+        f3, E3S1 --> E3 + S3
         (f5, f6), E3 + S3 <--> E3S3
         f7, E3S3 --> E3 + S2
     end

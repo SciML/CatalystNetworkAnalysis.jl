@@ -68,7 +68,7 @@ function minimalsiphons_smt(rs::ReactionSystem)
         # Add constraints as such: 
         # If the reaction has ∅ as a substrate complex, then it cannot be a member of a siphon. 
         # If s is produced by the reaction, then s = 1 implies that there is some species in the substrate complex that is also equal to 1. 
-        
+
         for p in prod_idx
             if isempty(subs)
                 cons = not(specs[p])
@@ -94,7 +94,7 @@ function minimalsiphons_smt(rs::ReactionSystem)
 end
 
 function removesupersets(indexsets)
-    indexsets = sort(indexsets, by=length)
+    indexsets = sort(indexsets, by = length)
     minimalsets = Array{Int64}[]
 
     for s in indexsets
@@ -125,7 +125,7 @@ function minimalsiphons_alg(rs::ReactionSystem)
     end
 
     ideal_generators = []
-    for r = 1:length(rxns)
+    for r in 1:length(rxns)
         s = findfirst(==(-1), @view D[:, r])
         p = findfirst(==(1), @view D[:, r])
         polynomial = cm[s] * (cm[p] - cm[s])
