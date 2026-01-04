@@ -1,7 +1,7 @@
 using Catalyst, CatalystNetworkAnalysis
 const C = CatalystNetworkAnalysis
 
-# Basic examples (section 2) 
+# Basic examples (section 2)
 let
     # Detected by the deficiency one check.
     rn = @reaction_network begin
@@ -12,11 +12,11 @@ let
     p = Dict([:k1 => 1, :k2 => 1])
     @test C.isconcentrationrobust(rn; p = p) == :GLOBAL_ACR
 
-    # This reaction network has four ACR regions. 
+    # This reaction network has four ACR regions.
     rn = @reaction_network begin
         @parameters α β
         (2α + β), A --> 0
-        (3 + α*β, α + β), A <--> 2A
+        (3 + α * β, α + β), A <--> 2A
         3, 2A --> 3A
         1, 3A --> 4A
     end
@@ -73,20 +73,24 @@ let
     @test deficiency(rn) == 1
 
     S, D = CatalystNetworkAnalysis.removespec(rn, 2)
-    @test S == [-2 2 0 0 0 0 1 -1 0 0;
-           0 0 1 -1 1 0 0 0 0 0;
-           0 0 0 1 -1 -1 0 0 0 0;
-           0 0 0 0 0 0 1 -1 0 0;
-           0 0 0 0 0 0 0 1 1 -1]
+    @test S == [
+        -2 2 0 0 0 0 1 -1 0 0;
+        0 0 1 -1 1 0 0 0 0 0;
+        0 0 0 1 -1 -1 0 0 0 0;
+        0 0 0 0 0 0 1 -1 0 0;
+        0 0 0 0 0 0 0 1 1 -1
+    ]
 
     @test CatalystNetworkAnalysis.deficiency(S, D) == 0
 
     S, D = CatalystNetworkAnalysis.removespec(rn, 3)
-    @test S == [-2 2 0 0 0 0 1 -1 0 0;
-           1 -1 -1 -1 1 2 -2 0 -2 2;
-           0 0 0 1 -1 -1 0 0 0 0;
-           0 0 0 0 0 0 1 -1 0 0;
-           0 0 0 0 0 0 0 1 1 -1]
+    @test S == [
+        -2 2 0 0 0 0 1 -1 0 0;
+        1 -1 -1 -1 1 2 -2 0 -2 2;
+        0 0 0 1 -1 -1 0 0 0 0;
+        0 0 0 0 0 0 1 -1 0 0;
+        0 0 0 0 0 0 0 1 1 -1
+    ]
 
     @test CatalystNetworkAnalysis.deficiency(S, D) == 1
 end

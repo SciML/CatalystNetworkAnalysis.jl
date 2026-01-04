@@ -1,6 +1,6 @@
 using CatalystNetworkAnalysis, Catalyst
 
-# Check if minimalsiphons() correctly identifies the set of siphons for each of the following reaction networks. 
+# Check if minimalsiphons() correctly identifies the set of siphons for each of the following reaction networks.
 let
     rn = @reaction_network begin
         (k1, k2), 2A + C <--> A + D
@@ -36,7 +36,7 @@ let
 
     siphons = [[2, 3], [5, 6], [1, 3, 4, 6]]
     S = netstoichmat(rn)
-    @test all(s->!iscritical(s, S), siphons) == true
+    @test all(s -> !iscritical(s, S), siphons) == true
     @time ms = minimalsiphons(rn)
     @test issetequal(ms, siphons)
 end
@@ -53,10 +53,12 @@ let
         k12, FS1 --> F + S0
     end
 
-    siphons = [[1, 3, 5], [7, 8, 9],
-        [2, 3, 4, 5, 6, 8, 9]]
+    siphons = [
+        [1, 3, 5], [7, 8, 9],
+        [2, 3, 4, 5, 6, 8, 9],
+    ]
     S = netstoichmat(rn)
-    @test all(s->!iscritical(s, S), siphons) == true
+    @test all(s -> !iscritical(s, S), siphons) == true
     @time ms = minimalsiphons(rn)
     @test issetequal(ms, siphons)
 end
@@ -81,14 +83,16 @@ let
         k24, FS1_ --> F_ + S0_
     end
 
-    siphons = [[1, 3, 5],
+    siphons = [
+        [1, 3, 5],
         [7, 8, 9],
         [15, 16, 17],
         [10, 11, 12, 13, 14, 16, 17],
-        [2, 3, 4, 5, 6, 8, 9, 11, 13]]
+        [2, 3, 4, 5, 6, 8, 9, 11, 13],
+    ]
 
     S = netstoichmat(rn)
-    @test all(s->!iscritical(s, S), siphons) == true
+    @test all(s -> !iscritical(s, S), siphons) == true
     @time ms = minimalsiphons(rn)
     @test issetequal(ms, siphons)
 end
@@ -113,11 +117,13 @@ let
         k24, MtF --> M + F
     end
 
-    siphons = [[2, 3, 5, 7, 9],
+    siphons = [
+        [2, 3, 5, 7, 9],
         [10, 11, 12, 13, 14],
-        [1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14]]
+        [1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14],
+    ]
     S = netstoichmat(rn)
-    @test all(s->!iscritical(s, S), siphons) == true
+    @test all(s -> !iscritical(s, S), siphons) == true
     @time ms = minimalsiphons(rn)
     @test issetequal(ms, siphons)
 end
@@ -133,8 +139,8 @@ let
     siphons = [[1, 3, 4], [2, 3, 4]]
     S = netstoichmat(rn)
 
-    # Both of the siphons in this system are critical. In the previous examples, all of the siphons were not critical.  
-    @test all(s->iscritical(s, S), siphons) == true
+    # Both of the siphons in this system are critical. In the previous examples, all of the siphons were not critical.
+    @test all(s -> iscritical(s, S), siphons) == true
     @time ms = minimalsiphons(rn)
     @test issetequal(ms, siphons)
 end

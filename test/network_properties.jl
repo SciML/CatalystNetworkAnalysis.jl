@@ -142,7 +142,7 @@ end
 function testreversibility(rn, B, rev, weak_rev)
     @test isreversible(rn) == rev
     subrn = subnetworks(rn)
-    @test isweaklyreversible(rn, subrn) == weak_rev
+    return @test isweaklyreversible(rn, subrn) == weak_rev
 end
 
 # Tests reversibility for networks with known reversibility.

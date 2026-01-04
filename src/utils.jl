@@ -33,7 +33,7 @@ function removespec(rn::ReactionSystem, spec::Int64)
         row = @view D[i, :]
         row .= sum([D_old[c, :] for c in complex])
     end
-    Y_new * D, D
+    return Y_new * D, D
 end
 
 """
@@ -55,7 +55,7 @@ function transitiveclosure(arr, relation)
     end
 
     intersectgraph = SimpleGraph(adjmat)
-    partition = Graphs.connected_components(intersectgraph)
+    return partition = Graphs.connected_components(intersectgraph)
 end
 
 """
@@ -72,7 +72,7 @@ function reactiontocomplexmap(rn::ReactionSystem)
         s = findfirst(==(-1), @view D[:, i])
         rxtocomplexmap[i] = s => p
     end
-    rxtocomplexmap
+    return rxtocomplexmap
 end
 
 function matrixtree(g::SimpleDiGraph, distmx::Matrix{T}) where {T}
@@ -97,7 +97,7 @@ function matrixtree(g::SimpleDiGraph, distmx::Matrix{T}) where {T}
     # generate all spanning trees
     ug = SimpleGraph(SimpleDiGraph(g))
 
-    for tree in Combinatorics.combinations(collect(edges(ug)), n-1)
+    for tree in Combinatorics.combinations(collect(edges(ug)), n - 1)
         tree = SimpleGraph(tree)
         isempty(Graphs.cycle_basis(t)) || continue
 
@@ -119,7 +119,7 @@ function treeweight(tree::SimpleDiGraph, distmx::Matrix{T}) where {T}
         p = Graphs.dst(e)
         prod *= distmx[s, p]
     end
-    prod
+    return prod
 end
 
 """
@@ -141,7 +141,7 @@ function ratematrix(rs::ReactionSystem, rates::Vector{T} = reactionrates(rs)) wh
         p = findfirst(==(1), @view D[:, r])
         ratematrix[s, p] = rates[r]
     end
-    ratematrix
+    return ratematrix
 end
 
 function matrixpower(v::Vector{T}, M::Matrix{T}) where {T <: Number}
@@ -152,5 +152,5 @@ function matrixpower(v::Vector{T}, M::Matrix{T}) where {T <: Number}
     for i in 1:n
         out[i] = prod([v[j]^M[i, j] for j in 1:m])
     end
-    out
+    return out
 end

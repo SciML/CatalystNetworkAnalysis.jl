@@ -44,21 +44,25 @@ let
     # Test common source reactions are found correctly
     S = netstoichmat(zigzag)
     csr = C.common_source_reactions(zigzag)
-    csr_true = [[2, 3],
+    csr_true = [
+        [2, 3],
         [9, 10, 13],
-        [18, 19]]
+        [18, 19],
+    ]
     @test issetequal(csr, csr_true)
 
-    # Test elementary flux modes 
+    # Test elementary flux modes
     efms = C.elementary_flux_modes(zigzag)
-    @test all(col -> iszero(S*col), eachcol(efms))
+    @test all(col -> iszero(S * col), eachcol(efms))
 
     efm_supports = [findall(>(0), efm) for efm in eachcol(efms)]
     efm_parts = C.efm_partitions(zigzag, efm_supports, csr)
-    efm_true = [[1, 2, 3, 4, 5],
+    efm_true = [
+        [1, 2, 3, 4, 5],
         [6, 7],
         [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-        [20, 21]]
+        [20, 21],
+    ]
 
     @test all(issetequal.(efm_parts, efm_true))
 
@@ -105,15 +109,17 @@ let
 
     S = netstoichmat(MAPK)
     csr = C.common_source_reactions(MAPK)
-    csr_true = [[2, 3],
+    csr_true = [
+        [2, 3],
         [5, 6],
         [8, 9],
         [11, 12],
-        [13, 14]]
+        [13, 14],
+    ]
     @test all(issetequal.(csr, csr_true))
 
     efms = C.elementary_flux_modes(MAPK)
-    @test all(col -> iszero(S*col), eachcol(efms))
+    @test all(col -> iszero(S * col), eachcol(efms))
 
     efm_supports = [findall(>(0), efm) for efm in eachcol(efms)]
     efm_parts = C.efm_partitions(MAPK, efm_supports, csr)

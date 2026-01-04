@@ -20,14 +20,17 @@ end
 
 # sign compatibility tests
 let
-    S = [1 1 0;
-         0 1 0;
-         1 0 0]
+    S = [
+        1 1 0;
+        0 1 0;
+        1 0 0
+    ]
     n = 3
 
     @test C.issigncompatible(S, Float64[], freeindices = collect(1:n)) == true
     @test_throws "The number of free signs and assigned signs does not sum to the length of the vector." C.issigncompatible(
-        S, Float64[])
+        S, Float64[]
+    )
     @test C.issigncompatible(S, [1, 1, 1]) == true
     @test C.issigncompatible(S, [-1, 1, 1]) == false
 end

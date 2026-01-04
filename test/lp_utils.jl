@@ -12,10 +12,12 @@ let
     a = [1 -1; -1 1]
     @test !C.has_positive_solution(b)
 
-    b = [-1 1 1 1;
-         1 -1 1 1;
-         1 1 -1 1
-         1 1 1 -1]
+    b = [
+        -1 1 1 1;
+        1 -1 1 1;
+        1 1 -1 1
+        1 1 1 -1
+    ]
     @test !C.has_positive_solution(b)
     @test C.has_positive_solution(b, nonneg = true)
 end

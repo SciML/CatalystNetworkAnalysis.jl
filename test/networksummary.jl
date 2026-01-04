@@ -8,9 +8,11 @@ rng = StableRNG(444)
 
 # Correctness tests for the NetworkSummary function for a large set of mass action SBML networks
 # Ground truths
-networks = [MAPK, zigzag, EnvZ_OmpR,
+networks = [
+    MAPK, zigzag, EnvZ_OmpR,
     his_kinase, oneSitePhosphorylation(10),
-    cellDeathNetwork(10), edelstein(10)]
+    cellDeathNetwork(10), edelstein(10),
+]
 
 # Test the correctness of each function.
 # 1) For concentration-robust networks, find a witness for concentration robustness

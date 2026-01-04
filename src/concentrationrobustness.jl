@@ -21,14 +21,14 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
             S, D = CatalystNetworkAnalysis.removespec(rn, i)
             (Catalyst.deficiency(rn) == CatalystNetworkAnalysis.deficiency(S, D)) &&
                 begin
-                    possibly_ACR = true
-                    break
-                end
+                possibly_ACR = true
+                break
+            end
         end
         (possibly_ACR == false) && return :NO_ACR
     end
 
-    # Convert parameter values to rational values. 
+    # Convert parameter values to rational values.
     try
         ftype, stype = eltype(p).parameters
         stype <: Rational || (p = Dict{ftype, Rational}(p))
@@ -36,14 +36,16 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
         return :INEXACTPARAMS
     end
 
-    # Compute steady state ideal. 
+    # Compute steady state ideal.
     sfr_f = eval(C.SFR(rn; p = p))
     R,
-    polyvars = polynomial_ring(QQ,
+        polyvars = polynomial_ring(
+        QQ,
         vcat(
             map(s -> Symbolics.tosymbol(s, escape = false), species(rn)),
             map(p -> Symbolics.tosymbol(p), parameters(rn))
-        ))
+        )
+    )
     sfr = sfr_f(polyvars...)
     specs = polyvars[1:numspecies(rn)]
 
@@ -64,7 +66,7 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
         return isempty(p) ? :GLOBAL_ACR : :MASS_ACTION_ACR
     end
 
-    # Iterate over elimination ideals I ∩ Q[x_i] and check for unique positive root. 
+    # Iterate over elimination ideals I ∩ Q[x_i] and check for unique positive root.
     # Create a dummy univariate ring
     r_ξ, ξ = polynomial_ring(QQ, :ξ)
 
@@ -74,7 +76,7 @@ function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
             iszero(g) && continue
 
             # Generate the univariate polynomial corresponding to the generator
-            coeff_pos = [exponent_vector(g, j)[i]+1 for j in 1:length(Oscar.terms(g))]
+            coeff_pos = [exponent_vector(g, j)[i] + 1 for j in 1:length(Oscar.terms(g))]
             coeffs = zeros(QQFieldElem, first(coeff_pos))
             coeffs[coeff_pos] .= Oscar.coefficients(g)
             poly = r_ξ(coeffs)
@@ -109,10 +111,10 @@ function linearelements(I::Ideal, numspecies::Int)
     return linearidxs
 end
 
-# TODO: Other methods. 
+# TODO: Other methods.
 # Compute decompositions of the positive-restriction ideal
 # Numerically checking for ACR
-# Compute the steady-state parameterization, check for constant components. 
+# Compute the steady-state parameterization, check for constant components.
 # Algorithm 6.1 for finding all pairs of ACR candidates
 
 """
@@ -128,22 +130,22 @@ function robustspecies_δ1(rn::ReactionSystem)
         error("This algorithm currently only checks for robust species in networks with deficiency one.")
     end
 
-    # A species is concentration robust in a deficiency one network if there are two non-terminal complexes (i.e. complexes 
-    # belonging to a linkage class that is not terminal) that differ only in species s (i.e. their difference is some 
-    # multiple of s. (A + B, A) differ only in B. (A + 2B, B) differ in both A and B, since A + 2B - B = A + B). 
+    # A species is concentration robust in a deficiency one network if there are two non-terminal complexes (i.e. complexes
+    # belonging to a linkage class that is not terminal) that differ only in species s (i.e. their difference is some
+    # multiple of s. (A + B, A) differ only in B. (A + 2B, B) differ in both A and B, since A + 2B - B = A + B).
 
     if !nps.checkedrobust
         tslcs = terminallinkageclasses(rn)
         Z = complexstoichmat(rn)
 
-        # Find the complexes that do not belong to a terminal linkage class 
+        # Find the complexes that do not belong to a terminal linkage class
         nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
         robust_species = Int64[]
 
         for c_s in nonterminal_complexes, c_p in nonterminal_complexes
 
             (c_s >= c_p) && continue
-            # Check the difference of all the combinations of complexes. The support is the set of indices that are non-zero 
+            # Check the difference of all the combinations of complexes. The support is the set of indices that are non-zero
             suppcnt = 0
             supp = 0
             for i in 1:size(Z, 1)
@@ -151,17 +153,17 @@ function robustspecies_δ1(rn::ReactionSystem)
                 (suppcnt > 1) && break
             end
 
-            # If the support has length one, then they differ in only one species, and that species is concentration robust. 
+            # If the support has length one, then they differ in only one species, and that species is concentration robust.
             (suppcnt == 1) && (supp ∉ robust_species) && push!(robust_species, supp)
         end
         nps.checkedrobust = true
         nps.robustspecies = robust_species
     end
 
-    nps.robustspecies
+    return nps.robustspecies
 end
 
 ##### DEFICIENCY METHODS
-# These are based on the computation of "robust ratios" between complexes - complexes y, y' such that x^y / x^y' is constant for all positive steady states. 
+# These are based on the computation of "robust ratios" between complexes - complexes y, y' such that x^y / x^y' is constant for all positive steady states.
 #   For def 0 networks, this is true for all networks in the same linkage class
-#   For def 1 networks, this is true for all 
+#   For def 1 networks, this is true for all

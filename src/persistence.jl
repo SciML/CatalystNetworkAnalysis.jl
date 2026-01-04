@@ -1,4 +1,3 @@
-
 ### TODO
 #   endotactic networks
 #   permanence in networks
@@ -53,21 +52,21 @@ function minimalsiphons_smt(rs::ReactionSystem)
     # We encode the problem as a Boolean satisfiability problem. In a siphon search, species that belong to the siphon have a value of 1, and those that do not have a value of 0
     @satvariable(specs[1:ns], Bool)
 
-    # Our initial constraint requires that there is at least one element in the siphon. 
+    # Our initial constraint requires that there is at least one element in the siphon.
     constraints = [or(specs)]
     siphons = Array{Int}[]
 
-    # Each reaction adds some constraint to our satisfiability problem. 
+    # Each reaction adds some constraint to our satisfiability problem.
     for rx in reactions(rs)
-        # Determine substrate and product species for the given reaction. 
+        # Determine substrate and product species for the given reaction.
         subs = rx.substrates
         prods = rx.products
         sub_idx = [sm[sub] for sub in subs]
         prod_idx = [sm[prod] for prod in prods]
 
-        # Add constraints as such: 
-        # If the reaction has ∅ as a substrate complex, then it cannot be a member of a siphon. 
-        # If s is produced by the reaction, then s = 1 implies that there is some species in the substrate complex that is also equal to 1. 
+        # Add constraints as such:
+        # If the reaction has ∅ as a substrate complex, then it cannot be a member of a siphon.
+        # If s is produced by the reaction, then s = 1 implies that there is some species in the substrate complex that is also equal to 1.
 
         for p in prod_idx
             if isempty(subs)
@@ -79,10 +78,10 @@ function minimalsiphons_smt(rs::ReactionSystem)
         end
     end
 
-    # Solve the CSP to find a siphon. 
+    # Solve the CSP to find a siphon.
     status = sat!(constraints..., solver = Z3())
 
-    # Any time we find a siphon, we must add another constraint in order to ensure that the siphons are minimal. To disallow 
+    # Any time we find a siphon, we must add another constraint in order to ensure that the siphons are minimal. To disallow
     while status == :SAT
         siphon = findall(Satisfiability.value(specs))
         push!(siphons, siphon)
@@ -98,7 +97,7 @@ function removesupersets(indexsets)
     minimalsets = Array{Int64}[]
 
     for s in indexsets
-        if !any(ms->issubset(ms, s), minimalsets)
+        if !any(ms -> issubset(ms, s), minimalsets)
             push!(minimalsets, s)
         end
     end
@@ -133,7 +132,7 @@ function minimalsiphons_alg(rs::ReactionSystem)
     end
     I = ideal(R, ideal_generators)
 
-    siphons = [indexin(gens(prime), vars) for prime in minimal_primes(I)]
+    return siphons = [indexin(gens(prime), vars) for prime in minimal_primes(I)]
 end
 
 """
@@ -145,7 +144,7 @@ function iscritical(siphon::Vector, S::Matrix)
     # Takes the rows of the stoichiometric matrix corresponding to the siphon species
     S_r = S[siphon, :]
 
-    # If there is a non-negative vector in the nullspace of S_red', then there is a positive conservation law with a support that is the subset of the siphon, and the siphon is not critical 
+    # If there is a non-negative vector in the nullspace of S_red', then there is a positive conservation law with a support that is the subset of the siphon, and the siphon is not critical
     conslaws_r = conservationlaws(S_r)
-    !has_positive_solution(copy(conslaws_r'), nonneg = true)
+    return !has_positive_solution(copy(conslaws_r'), nonneg = true)
 end
