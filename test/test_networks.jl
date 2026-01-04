@@ -39,7 +39,7 @@ end
 ### CONCENTRATION-ROBUST NETWORKS ###
 #####################################
 
-# From Johnston et al. 
+# From Johnston et al.
 EnvZ_OmpR = @reaction_network EnvZ_OmpR begin
     (k1, k2), XD <--> X
     (k3, k4), X <--> XT
@@ -101,7 +101,7 @@ acr_nets = [EnvZ_OmpR, WNT, his_kinase, feinberg_shinar_network]
 
 # Some reaction networks with multiple equilibria, drawn from Gross et al, 2020
 function oneSitePhosphorylation(n::Int64)
-    rx = [];
+    rx = []
     n = 10
     @species S(t)[0:n] X(t)[1:n] Y(t)[1:n] E(t) F(t)
     @parameters k[1:n, 1:6]
@@ -116,18 +116,18 @@ function oneSitePhosphorylation(n::Int64)
 
     @named osp = ReactionSystem(rx, t, [S..., X..., Y..., E, F], vec(k))
     osp = complete(osp)
-    osp
+    return osp
 end
 
 function edelstein(n::Int64)
-    rx = [];
+    rx = []
     n = 10
     @species A(t) B(t) D(t)[1:n]
     @parameters k[1:(4 * n + 2)]
     push!(rx, Reaction(k[1], [A], [A], [1], [2]))
     push!(rx, Reaction(k[2], [A], [A], [2], [1]))
     for i in 1:n
-        i1, i2, i3, i4 = (4*(i-1)+3, 4*(i-1)+4, 4*(i-1)+5, 4*(i-1)+6)
+        i1, i2, i3, i4 = (4 * (i - 1) + 3, 4 * (i - 1) + 4, 4 * (i - 1) + 5, 4 * (i - 1) + 6)
         push!(rx, Reaction(k[i1], [A, B], [D[i]], [1, 1], [1]))
         push!(rx, Reaction(k[i2], [D[i]], [A, B], [1], [1, 1]))
         push!(rx, Reaction(k[i3], [D[i]], [B], [1], [1]))
@@ -135,23 +135,23 @@ function edelstein(n::Int64)
     end
     @named edelstein = ReactionSystem(rx, t, [A, B, D...], collect(k))
     edelstein = complete(edelstein)
-    edelstein
+    return edelstein
 end
 
 function cellDeathNetwork(n::Int64)
-    rx = [];
+    rx = []
     n = 10
     @species X(t) Y(t)
     @parameters k[1:n, 1:n]
     for i in 1:n
         for j in 1:n
             i >= j && continue
-            push!(rx, Reaction(k[i, j], [X, Y], [X, Y], [n-i, i], [n-j, j]))
+            push!(rx, Reaction(k[i, j], [X, Y], [X, Y], [n - i, i], [n - j, j]))
         end
     end
     @named rs = ReactionSystem(rx, t)
     rs = complete(rs)
-    rs
+    return rs
 end
 
 #################################

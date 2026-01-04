@@ -1,5 +1,5 @@
 # This file contains functionality for translated reaction networks, which extend the results
-# of deficiency theory to a much wider range of networks. 
+# of deficiency theory to a much wider range of networks.
 
 # (1) Johnston, M. D. Translated Chemical Reaction Networks. Bull Math Biol 2014, 76 (5), 1081–1116. https://doi.org/10.1007/s11538-014-9947-5.
 
@@ -25,7 +25,7 @@ end
 
 function Translation(rn, Y_T, D_T, tcmap)
     T = eltype(Y_T)
-    Translation(rn, Y_T, D_T, tcmap, false, true, Vector{Vector{T}}(undef, 0), -1, -1)
+    return Translation(rn, Y_T, D_T, tcmap, false, true, Vector{Vector{T}}(undef, 0), -1, -1)
 end
 
 """
@@ -113,7 +113,7 @@ function WRDZ_translation(rn::ReactionSystem)
         D_T[translatedcmap[p], i] = 1
     end
 
-    # If any final complexes are not non-negative, add a pseudo-complex to each member of the linkage class 
+    # If any final complexes are not non-negative, add a pseudo-complex to each member of the linkage class
     any(<(0), _Y_T) && begin
         img = Catalyst.incidencematgraph(D_T)
         lcs = Catalyst.linkageclasses(img)
@@ -143,14 +143,14 @@ function construct_rr_graph(rn::ReactionSystem)
     EFMs = elementary_flux_modes(rn)
 
     # Check that EFMs are unitary and cover R
-    all(i -> (i==1 || i==0), EFMs) || return nothing
+    all(i -> (i == 1 || i == 0), EFMs) || return nothing
     all(>(0), sum(EFMs, dims = 2)) || return nothing
 
     EFM_supports = [findall(>(0), efm) for efm in eachcol(EFMs)]
 
-    model = Model(HiGHS.Optimizer);
+    model = Model(HiGHS.Optimizer)
     set_silent(model)
-    set_optimizer_attribute(model, "mip_feasibility_tolerance", 1e-10)
+    set_optimizer_attribute(model, "mip_feasibility_tolerance", 1.0e-10)
 
     r = length(reactions(rn))
     @variable(model, edge[1:r, 1:r], Bin)
@@ -172,7 +172,7 @@ function construct_rr_graph(rn::ReactionSystem)
         @constraint(model, edge[efm_parts[j], efm_parts[i]] .== 0)
     end
 
-    # CS constraints: any two reactions with the same source complex have the 
+    # CS constraints: any two reactions with the same source complex have the
     # same incoming edges in the RR graph.
     for rxs in csrs
         for i in 1:length(rxs), j in 1:length(rxs)
@@ -192,7 +192,7 @@ function construct_rr_graph(rn::ReactionSystem)
             @constraint(model, sum(edge[r, supp]) == 1)
         end
 
-        # Prevent subcycles. 
+        # Prevent subcycles.
         for n in 2:floor(Int, l / 2)
             for idxs in combinations(supp, n)
                 @constraint(model, sum(edge[idxs, idxs]) <= n - 1)
@@ -201,8 +201,8 @@ function construct_rr_graph(rn::ReactionSystem)
     end
 
     optimize!(model)
-    is_solved_and_feasible(model) ? (return Matrix{Int64}(JuMP.value.(model[:edge]))) :
-    (return nothing)
+    return is_solved_and_feasible(model) ? (return Matrix{Int64}(JuMP.value.(model[:edge]))) :
+        (return nothing)
 end
 
 function common_source_reactions(rn::ReactionSystem)
@@ -214,7 +214,7 @@ function common_source_reactions(rn::ReactionSystem)
         outgoing_rxs = findall(==(-1), @view D[i, :])
         length(outgoing_rxs) > 1 ? push!(common_source_rxs, outgoing_rxs) : continue
     end
-    common_source_rxs
+    return common_source_rxs
 end
 
 # 1) any two EFMs with a reaction in common are in the same partition, and 2) any two EFMs with reactions with the same source complex are in the same partition.
@@ -234,8 +234,9 @@ function efm_partitions(rn::ReactionSystem, efm_supports, csrs)
     # Collapse common elements of the partition
 
     ccs = CatalystNetworkAnalysis.transitiveclosure(
-        efm_supports, (efm1, efm2) -> is_equiv_efm(efm1, efm2, csrs))
-    efm_parts = [union(efm_supports[cc]...) for cc in ccs]
+        efm_supports, (efm1, efm2) -> is_equiv_efm(efm1, efm2, csrs)
+    )
+    return efm_parts = [union(efm_supports[cc]...) for cc in ccs]
 end
 
 # (1) Johnston, M. D.; Müller, S.; Pantea, C. A Deficiency-Based Approach to Parametrizing Positive Equilibria of Biochemical Reaction Systems. arXiv May 23, 2018. http://arxiv.org/abs/1805.09295 (accessed 2024-09-09).
@@ -252,13 +253,13 @@ function isweaklyreversible(trn::Translation)
         Graphs.is_strongly_connected(sg) || (trn.isweaklyrev = false)
     end
     trn.checkedrev = true
-    trn.isweaklyrev
+    return trn.isweaklyrev
 end
 
 function linkageclasses(trn::Translation)
     !isempty(trn.linkageclasses) && return trn.linkageclasses
     trn.linkageclasses = Graphs.connected_components(Catalyst.incidencematgraph(trn.D_T))
-    trn.linkageclasses
+    return trn.linkageclasses
 end
 
 function effectivedeficiency(trn::Translation)
@@ -269,7 +270,7 @@ function effectivedeficiency(trn::Translation)
     nc = size(trn.D_T, 1)
     l = length(linkageclasses(trn))
     trn.effectivedeficiency = nc - l - rank(S)
-    trn.effectivedeficiency
+    return trn.effectivedeficiency
 end
 
 function kineticdeficiency(trn::Translation)
@@ -281,5 +282,5 @@ function kineticdeficiency(trn::Translation)
     l = length(linkageclasses(rn))
 
     trn.kineticdeficiency = nc - l - rank(trn.Y_T * D)
-    trn.kineticdeficiency
+    return trn.kineticdeficiency
 end

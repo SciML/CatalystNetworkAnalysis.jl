@@ -1,6 +1,6 @@
-# Testing whether regularity is properly tested. 
+# Testing whether regularity is properly tested.
 
-# This file contains tests for the implementation of the deficiency one algorithm and the higher deficiency algorithm. 
+# This file contains tests for the implementation of the deficiency one algorithm and the higher deficiency algorithm.
 using Catalyst
 import CatalystNetworkAnalysis as C
 using JuMP, HiGHS
@@ -17,7 +17,7 @@ let
         k12, B + E --> C
     end
 
-    # Fails the terminal linkage class cut-link condition. 
+    # Fails the terminal linkage class cut-link condition.
     irregular_rn = @reaction_network begin
         k1, 2A --> B
         (k2, k3), B <--> C + D
@@ -30,7 +30,7 @@ let
         k13, E --> F
     end
 
-    # Fails the number of terminal linkage class condition. D --> C is now irreversible, and C <--> B + E now is, making (C, B + E) a terminal linkage class. 
+    # Fails the number of terminal linkage class condition. D --> C is now irreversible, and C <--> B + E now is, making (C, B + E) a terminal linkage class.
     irregular_rn2 = @reaction_network begin
         k1, 2A --> B
         (k2, k3), B <--> C + D
@@ -53,7 +53,7 @@ end
 # Testing `generatepartitions()`: whether the number of partitions matches expectations
 
 let
-    # This reaction network has {A} as a trivial terminal linkage class. 
+    # This reaction network has {A} as a trivial terminal linkage class.
     one_trivial_tlc = @reaction_network begin
         k1, 2A --> B
         (k2, k3), B <--> C + D
@@ -65,7 +65,7 @@ let
         k12, B + E --> C
     end
 
-    # By making D <--> A reversible, the terminal linkage class containing A gets expanded. 
+    # By making D <--> A reversible, the terminal linkage class containing A gets expanded.
     zero_trivial_tlc = @reaction_network begin
         k1, 2A --> B
         (k2, k3), B <--> C + D
@@ -120,15 +120,15 @@ let
     correctpartition = [[1, 2, 7, 8, 9], [5, 10], [3, 4]]
     cutdict = C.cutlinkpartitions(rn)
 
-    Y = complexstoichmat(rn);
+    Y = complexstoichmat(rn)
     S = netstoichmat(rn)
-    s, c = size(Y);
+    s, c = size(Y)
     r = size(S, 2)
 
     # Initialization
-    model = Model(HiGHS.Optimizer);
+    model = Model(HiGHS.Optimizer)
     set_silent(model)
-    @variable(model, μ[1:s]);
+    @variable(model, μ[1:s])
     @variable(model, n)
     @objective(model, Min, 0)
 
@@ -137,7 +137,7 @@ let
 end
 
 # Testing whether the deficiency one algorithm returns the correct answer
-# in some simple cases. 
+# in some simple cases.
 
 let
     rn1 = @reaction_network begin
@@ -159,22 +159,22 @@ let
     end
 
     # Lotka-Volterra network. Has periodic solutions, but only one equilibrium
-    # per stoichiometric compatibility class. 
+    # per stoichiometric compatibility class.
     rn4 = @reaction_network begin
         k1, A --> 2A
         k2, A + B --> 2B
         k3, B --> 0
     end
 
-    # Networks that can admit multiple equilibria. 
-    # Edelstein network. 
+    # Networks that can admit multiple equilibria.
+    # Edelstein network.
     rn5 = @reaction_network begin
         (k1, k2), A <--> 2A
         (k3, k4), A + B <--> C
         (k5, k6), B <--> C
     end
 
-    # Chirality pattern formation network 
+    # Chirality pattern formation network
     rn6 = @reaction_network begin
         (k1, k2), L + 2R + P <--> 3R + Q
         (k3, k4), R + 2L + P <--> 3L + Q

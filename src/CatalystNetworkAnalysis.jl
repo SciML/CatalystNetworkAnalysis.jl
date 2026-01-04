@@ -10,8 +10,8 @@ using Oscar
 
 # Linear programming (for concordance + deficiency)
 using JuMP, HiGHS
-const M::Float64 = 1E4
-const ϵ::Float64 = 1E-4
+const M::Float64 = 1.0e4
+const ϵ::Float64 = 1.0e-4
 
 using LinearAlgebra
 using Graphs

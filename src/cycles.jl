@@ -5,7 +5,7 @@
 """
 function isconsistent(rs::ReactionSystem)
     cyclemat = Catalyst.cycles(rs)
-    has_positive_solution(cyclemat)
+    return has_positive_solution(cyclemat)
 end
 
 """
@@ -15,7 +15,7 @@ end
 """
 function isconservative(rs::ReactionSystem)
     conslaws = conservationlaws(rs)
-    has_positive_solution(copy(conslaws'))
+    return has_positive_solution(copy(conslaws'))
 end
 
 """
@@ -24,7 +24,7 @@ end
     See documentation for [`isconsistent`](@ref).
 """
 function ispositivelydependent(rs::ReactionSystem)
-    isconsistent(rs)
+    return isconsistent(rs)
 end
 
 """
@@ -40,5 +40,5 @@ function elementary_flux_modes(rn::ReactionSystem)
     poly = Polyhedra.polyhedron(hrep(hyperplanes, halfspaces), CDDLib.Library())
     vrep(poly)
 
-    EFMs = Matrix{Int64}(reduce(hcat, map(x->x.a, Polyhedra.rays(poly))))
+    return EFMs = Matrix{Int64}(reduce(hcat, map(x -> x.a, Polyhedra.rays(poly))))
 end
