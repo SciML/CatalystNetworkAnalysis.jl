@@ -1,7 +1,7 @@
 name = "CatalystNetworkAnalysis"
 uuid = "5fe4a9df-d2e2-44a6-8bda-0abe10269b5a"
 authors = ["Vincent Du"]
-version = "0.1.0"
+version = "1.0.0"
 
 [deps]
 CDDLib = "3391f64e-dcde-5f30-b752-e11513730f60"
