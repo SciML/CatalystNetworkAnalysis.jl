@@ -20,7 +20,6 @@ using Test
 #   intentionally via Mod.name; ignored per ExplicitImports' public-API checks.
 run_qa(
     CatalystNetworkAnalysis;
-    explicit_imports = true,
     # jet_broken uses report_package; match the original invocation
     # (target_defined_modules only, no target_modules narrowing) so the genuine
     # ~14 reports are still surfaced as @test_broken rather than filtered out.
@@ -28,7 +27,6 @@ run_qa(
     aqua_kwargs = (; deps_compat = (check_extras = false,)),
     aqua_broken = (:stale_deps,),
     jet_broken = true,
-    api_docs_kwargs = (; rendered = true),
     ei_kwargs = (;
         all_qualified_accesses_are_public = (;
             ignore = (
