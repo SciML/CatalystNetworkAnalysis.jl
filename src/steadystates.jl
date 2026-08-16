@@ -8,8 +8,19 @@ else
     systemdefaults(rn::ReactionSystem) = rn.defaults
 end
 
-# Struct summarizing the dynamic information of the reaction network, including its capacity for
-# multiple equilibria, concentration robustness, and persistence.
+"""
+    NetworkSummary
+
+Summary of structural properties computed by [`networksummary`](@ref).
+
+# Fields
+
+- `steadystates`: status returned by `hasuniquesteadystates`.
+- `concentrationrobust`: status returned by `isconcentrationrobust`.
+- `persistent`: status returned by `ispersistent`.
+- `mixedvolume`: upper bound from `mixedvolume`, or `-1` when that calculation
+  was not requested.
+"""
 mutable struct NetworkSummary
     steadystates::Symbol
     concentrationrobust::Symbol
@@ -20,13 +31,28 @@ end
 """
     networksummary(rn::ReactionSystem; p::VarMapType, u0::VarMapType, mv = false)
 
-    Summary of properties that can be inferred from the structure of a reaction network. May give different results depending on whether `p` or `u0` is supplied. The set of functions run are the following: 
-    - `hasuniquesteadystates`
-    - `isconcentrationrobust`
-    - `ispersistent`
-    - `mixedvolume`
+Compute a structural summary of a reaction system.
 
-    Mixed volume may take a very long time to run and is disabled by default. It can be enabled by setting the flag `mv = true`. Note that mixed volume requires an initial condition. 
+# Arguments
+
+- `rn`: mass-action reaction system to analyze.
+
+# Keyword Arguments
+
+- `p`: parameter map passed to the steady-state and concentration-robustness
+  analyses. The system defaults are used by default.
+- `u0`: initial-condition map used by the mixed-volume analysis.
+- `mv`: whether to compute the mixed-volume bound. This can be expensive and
+  defaults to `false`; it is ignored when `u0` is empty.
+
+# Returns
+
+A [`NetworkSummary`](@ref) containing the steady-state, concentration-
+robustness, persistence, and mixed-volume statuses.
+
+# Throws
+
+An error if `rn` is not an integer-coefficient mass-action reaction system.
 """
 function networksummary(rn::ReactionSystem; p::VarMapType = systemdefaults(rn), u0::VarMapType = Dict(), mv = false)
     all(r -> ismassaction(r, rn), reactions(rn)) ||
@@ -97,12 +123,23 @@ end
 """
     hasuniquesteadystates(rn::ReactionSystem)
 
-    Check whether a reaction network has the capacity to admit multiple steady states, for some choice of rate constants. Return codes: 
-    - :NO_EQUILIBRIUM - no positive equilibrium for any choice of rate constants
-    - :STRUCTURALLY_UNIQUE - only one steady state for every SCC, for every choice of rate constants
-    - :STRUCTURALLY_MULTIPLE - multiple steady states in a certain SCC guaranteed for any choice of rate constants
-    - :KINETICALLY_MULTIPLE - multiple steady states in a certain SCC guaranteed for certain choices of rate constants
-    - :POSSIBLY_MULTIPLE - discordant and/or high deficiency, but inconclusive whether there are system parameters that lead to the existence of an SCC with multiple steady states. 
+Classify the possible number of positive steady states of a reaction system.
+
+# Arguments
+
+- `rn`: reaction system to analyze.
+
+# Keyword Arguments
+
+- `p`: optional parameter map used for kinetic balance checks.
+- `u0`: optional initial-condition map reserved for compatibility-class
+  analyses.
+
+# Returns
+
+One of `:NO_EQUILIBRIUM`, `:STRUCTURALLY_UNIQUE`,
+`:STRUCTURALLY_MULTIPLE`, `:KINETICALLY_UNIQUE`, `:KINETICALLY_MULTIPLE`, or
+`:POSSIBLY_MULTIPLE`.
 """
 function hasuniquesteadystates(rn::ReactionSystem; p::VarMapType = Dict(), u0::VarMapType = Dict())
     nps = Catalyst.get_networkproperties(rn)
@@ -155,7 +192,17 @@ end
 """
     haspositivesteadystates(rn::ReactionSystem)
 
-    Checks whether the reaction system will have any positive steady states, i.e. steady states for which the concentration of each species is positive. 
+Check whether a reaction system admits a positive steady state.
+
+# Arguments
+
+- `rn`: reaction system to analyze.
+
+# Returns
+
+A Boolean result when the structural checks decide the question. The current
+implementation is conservative for cases that require a more detailed
+analysis.
 """
 function haspositivesteadystates(rn::ReactionSystem)
     subs = subnetworks(rn)
@@ -164,9 +211,19 @@ function haspositivesteadystates(rn::ReactionSystem)
 end
 
 """
-    haspositivesteadystates(rn::ReactionSystem)
+    hasperiodicsolutions(rn::ReactionSystem)
 
-    Checks whether the reaction system will have any periodic solutions. 
+Check whether a reaction system admits periodic solutions.
+
+# Arguments
+
+- `rn`: reaction system to analyze.
+
+# Returns
+
+`false` until a periodic-solution criterion is implemented. This developer
+hook is retained so callers can use a stable predicate while the analysis is
+expanded.
 """
 function hasperiodicsolutions(rn::ReactionSystem)
     return isconservative(rn) && false
@@ -177,11 +234,29 @@ end
 ####################################################################
 
 """
-    SFR(rn::ReactionSystem; u0, p) 
+    SFR(rn::ReactionSystem; u0 = Dict(), p = Dict())
 
-    Takes in a reaction network, and returns a symbolic function that evaluates the species formation rate function, which can be used to create steady state polynomials in the desired output type (be it Symbolic, DynamicPolynomial, or QQPolyElem for abstract algebra calculations). 
+Construct a callable species-formation-rate function.
 
-    Optionally takes an initial condition (which is used to compute conservation laws) and a parameter map as arguments. These maps must be a dictionary, vector, or tuple of variable-to-value mappings, e.g. [:k1 => 1., :k2 => 2., ...]
+The returned function accepts the species followed by the parameters of `rn`.
+It can therefore be evaluated in the symbolic or polynomial type required by
+downstream steady-state analyses.
+
+# Arguments
+
+- `rn`: reaction system whose formation rates are assembled.
+
+# Keyword Arguments
+
+- `u0`: optional initial-condition map used to substitute conservation-law
+  constants.
+- `p`: optional parameter map used to substitute rate parameters.
+
+Both maps may be a `Dict`, a vector of `Pair`, or a tuple of `Pair`.
+
+# Returns
+
+A callable function of the species and parameters in `rn`.
 """
 function SFR(rn::ReactionSystem; u0::VarMapType = Dict(), p::VarMapType = Dict())
     specs = species(rn)
@@ -230,7 +305,25 @@ end
 """
     modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
 
-    Construct the modified SFR for the mixed volume and injectivity. Differs from the other SFR function in that certain species' rates get replaced with conservation laws, but not substituted out altogether. 
+Construct the modified species-formation-rate system used by mixed-volume and
+injectivity analyses.
+
+Unlike [`SFR`](@ref), this representation replaces selected species rates by
+conservation-law equations without eliminating those species from the system.
+
+# Arguments
+
+- `rn`: reaction system to analyze.
+- `u0`: initial-condition map used to evaluate the conserved quantities.
+
+# Keyword Arguments
+
+- `p`: parameter map reserved for the parameterized formation-rate workflow.
+
+# Returns
+
+The modified symbolic formation-rate vector with the conservation equations
+appended for the selected species.
 """
 function modifiedSFR(rn::ReactionSystem, u0::VarMapType; p::VarMapType = Dict())
     conslaws = conservationlaws(rn)
@@ -265,7 +358,20 @@ end
 """
     mixedvolume(rn::ReactionSystem, u0::VarMapType)
 
-    Compounds an upper bound on the number of steady states in a particular stoichiometric compatibility class. 
+Compute an upper bound on the number of steady states in a compatibility class.
+
+# Arguments
+
+- `rn`: reaction system to analyze.
+- `u0`: initial-condition map defining the stoichiometric compatibility class.
+
+# Returns
+
+The mixed volume of the modified steady-state polynomial support.
+
+# Throws
+
+An error if `u0` does not contain one value for every species in `rn`.
 """
 function mixedvolume(rn::ReactionSystem, u0::VarMapType)
     (length(u0) != length(species(rn))) &&

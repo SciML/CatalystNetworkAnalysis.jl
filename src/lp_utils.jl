@@ -7,7 +7,23 @@
 """
     add_subspace_constraints(S; model = nothing, var_name = "")
 
-    Given a matrix S, add the constraints that the solution vector μ will lie in the image space of S. If the model does not already exists, initialize one.
+Add JuMP constraints requiring a variable vector to lie in the image of `S`.
+
+# Arguments
+
+- `S`: an `s × r` matrix whose image defines the feasible vector space.
+
+# Keyword Arguments
+
+- `model`: an existing `JuMP.Model`; when `nothing`, a silent HiGHS-backed
+  model is created.
+- `var_name`: string used as the base name for the coefficient and image
+  variables stored in `model`.
+
+# Returns
+
+The supplied or newly created `JuMP.Model`, with the coefficient and image
+variables and the constraint `S * coeffs == var` registered in it.
 """
 function add_subspace_constraints(S::T; model = nothing, var_name::String = "") where {
         T <:
@@ -34,7 +50,26 @@ end
 """
     add_sign_constraints(S; model = nothing, var_name = "")
 
-Given a matrix S, add the constraints that the solution vector var will be sign-compatible with the image space of S. If the model does not already exists, initialize one.
+Add JuMP constraints requiring a nonzero variable vector to be sign-compatible
+with the image of `S`.
+
+# Arguments
+
+- `S`: an `s × r` matrix whose image defines the sign-compatible space.
+
+# Keyword Arguments
+
+- `model`: an existing `JuMP.Model`; when `nothing`, a silent HiGHS-backed
+  model is created.
+- `var_name`: string used as the base name for the continuous and Boolean
+  variables stored in `model`.
+
+# Returns
+
+The supplied or newly created `JuMP.Model`, containing the sign variables,
+the image-space variables, and constraints that select exactly one of
+positive, negative, or zero for each component while excluding the zero
+vector.
 """
 function add_sign_constraints(S::T; model = nothing, var_name::String = "") where {
         T <:

@@ -48,9 +48,22 @@ function add_concordance_constraints(model, rn::ReactionSystem)
 end
 
 """
-    isconcordant(rn::ReactionSystem, atol=1e-12)
+    isconcordant(rn::ReactionSystem)
 
-Given a reaction network (and an absolute tolerance for the nullspace matrix below which entries should be zero), test whether the reaction network's graph has a property called concordance. A concordant network will not admit multiple equilibria in any stoichiometric compatibility class. The algorithm for this check follows Haixia Ji's PhD thesis, (Ji, 2011).
+Test whether a reaction system is concordant.
+
+Concordance is a graph property that rules out multiple equilibria in every
+stoichiometric compatibility class. The test follows Ji's characterization
+of discordance and solves the resulting mixed-integer feasibility problem.
+
+# Arguments
+
+- `rn`: reaction system to analyze.
+
+# Returns
+
+`true` when the reaction system is concordant and `false` when a discordance
+witness exists.
 """
 function isconcordant(rn::ReactionSystem)
     S = netstoichmat(rn)
