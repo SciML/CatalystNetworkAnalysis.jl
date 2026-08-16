@@ -1,14 +1,33 @@
 """
     isconcentrationrobust(rn::ReactionSystem)
 
-    Requires the parameter values be Rational or Integer. Check whether a reaction network has any concentration-robust species. Return codes: 
-    - :MASS_ACTION_ACR - this species is concentration-robust for the given set of rate constants 
-    - :GLOBAL_ACR - this species is absolutely concentration-robust for every choice of rate constants
-    - :INCONCLUSIVE - the algorithm currently cannot decide whether this network has ACR. One could try calling this function with rate constants provided. 
-    - :NO_ACR - the reaction network does not have ACR. 
-    - :INEXACTPARAMS - the algorithm cannot conclude concentration-robustness due to inexact parameters (floats that are too small)
+Determine whether a reaction system has absolute concentration robustness.
 
-    Follows the approach outlined in [Puente et al. 2023](https://arxiv.org/abs/2401.00078).
+The test uses exact arithmetic. Parameter values should therefore be
+integers or rationals when supplied.
+
+# Arguments
+
+- `rn`: reaction system to analyze.
+
+# Keyword Arguments
+
+- `p`: optional parameter map. Accepted forms are a `Dict`, a vector of
+  `Pair`, or a tuple of `Pair`. An empty map tests robustness independently
+  of rate constants.
+
+# Returns
+
+One of the following symbols:
+
+- `:MASS_ACTION_ACR`: robustness was found for the supplied rate constants.
+- `:GLOBAL_ACR`: robustness was found independently of rate constants.
+- `:INCONCLUSIVE`: the algorithm could not decide.
+- `:NO_ACR`: the network has no concentration-robust species.
+- `:INEXACTPARAMS`: supplied parameters could not be converted to exact
+  values.
+
+The algorithm follows the approach outlined in [Puente et al. 2023](https://arxiv.org/abs/2401.00078).
 """
 function isconcentrationrobust(rn::ReactionSystem; p::VarMapType = Dict())
     nps = Catalyst.get_networkproperties(rn)
@@ -95,8 +114,18 @@ end
 """
     linearelements(I, numspecies)
 
-    Look for terms of the form x - α_i in the basis for the positive steady-state ideal. Their presence
-    implies the existence of ACR in that species. 
+Find linear species terms in a steady-state ideal basis.
+
+# Arguments
+
+- `I`: ideal whose Groebner basis is inspected.
+- `numspecies`: number of leading variables corresponding to species.
+
+# Returns
+
+A vector of one-based species indices for which the basis contains a term of
+the form `x - α`. Such a term is a candidate for absolute concentration
+robustness.
 """
 function linearelements(I::Ideal, numspecies::Int)
     G = Oscar.groebner_basis(I)
@@ -118,9 +147,23 @@ end
 # Algorithm 6.1 for finding all pairs of ACR candidates
 
 """
-    robustspecies(rn::ReactionSystem)
+    robustspecies_δ1(rn::ReactionSystem)
 
-    For a network of deficiency one, return a vector of indices corresponding to species that are concentration robust, i.e. for every positive equilbrium, the concentration of species s will be the same. 
+Find concentration-robust species using the deficiency-one criterion.
+
+# Arguments
+
+- `rn`: reaction network with deficiency one.
+
+# Returns
+
+A vector of one-based species indices that are concentration robust for the
+network's positive equilibria.
+
+# Throws
+
+An error if `rn` does not have deficiency one. The criterion is structural and
+does not determine robustness for networks with another deficiency.
 """
 function robustspecies_δ1(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)

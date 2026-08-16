@@ -90,6 +90,29 @@ WRDZ_translation
 
 Misc references[^9] [^10] [^11] [^12] [^13] [^14] [^15] [^16] [^17] [^18].
 
+## Developer API
+
+The following functions support the algorithms in this package and are documented
+for developers extending its implementations. They are not part of the stable
+user-facing API unless explicitly exported above.
+
+```@docs
+CatalystNetworkAnalysis.add_sign_constraints
+CatalystNetworkAnalysis.add_subspace_constraints
+CatalystNetworkAnalysis.haspositivesteadystates
+CatalystNetworkAnalysis.hasperiodicsolutions
+CatalystNetworkAnalysis.ispositivelydependent
+CatalystNetworkAnalysis.linearelements
+CatalystNetworkAnalysis.modifiedSFR
+CatalystNetworkAnalysis.NetworkSummary
+CatalystNetworkAnalysis.ratematrix
+CatalystNetworkAnalysis.reactiontocomplexmap
+CatalystNetworkAnalysis.removespec
+CatalystNetworkAnalysis.robustspecies_δ1
+CatalystNetworkAnalysis.transitiveclosure
+CatalystNetworkAnalysis.Translation
+```
+
 ## References
 
 [^1]: Feinberg, M. Foundations of Chemical Reaction Network Theory; Applied Mathematical Sciences; Springer International Publishing: Cham, 2019; Vol. 202. https://doi.org/10.1007/978-3-030-03858-8.

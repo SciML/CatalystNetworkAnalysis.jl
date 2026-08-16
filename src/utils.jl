@@ -18,7 +18,18 @@ end
 """
     removespec(rn, spec)
 
-    Return the net stoichiometric matrix and incidence matrix obtained when removing a species at index spec from the reaction network.
+Remove one species from a reaction network's stoichiometric representation.
+
+# Arguments
+
+- `rn`: reaction network whose species are being reduced.
+- `spec`: one-based index of the species to remove.
+
+# Returns
+
+A pair `(S, D)` containing the reduced net stoichiometric matrix and the
+reduced incidence matrix. Complexes that become identical after removing the
+species are merged before constructing `D`.
 """
 function removespec(rn::ReactionSystem, spec::Int64)
     s, r = size(netstoichmat(rn))
@@ -39,7 +50,21 @@ end
 """
     transitiveclosure(arr, relation)
 
-    Given an iterable array and a (symmetric, reflexive) relation (a function that takes two objects, and returns true if they belong to the relation), return the partitions of the set under the transitive closure of the given relation.
+Partition an iterable into connected components under a relation.
+
+The relation is evaluated for pairs of elements and is assumed to be
+symmetric and reflexive. The returned components are represented by the
+one-based indices of the elements in `arr`.
+
+# Arguments
+
+- `arr`: iterable whose elements are to be partitioned.
+- `relation`: binary predicate that identifies related elements.
+
+# Returns
+
+A vector of vectors of indices. Two elements occur in the same vector when
+they are connected by the transitive closure of `relation`.
 """
 function transitiveclosure(arr, relation)
     adjmat = SparseArrays.spzeros(Bool, length(arr), length(arr))
@@ -59,9 +84,18 @@ function transitiveclosure(arr, relation)
 end
 
 """
-    function reactiontocomplexmap(rn::ReactionSystem)
+    reactiontocomplexmap(rn::ReactionSystem)
 
-Construct a map from the reactions of the system to the indices of the complexes they transform between.
+Construct a map from reaction indices to source and product complex indices.
+
+# Arguments
+
+- `rn`: reaction system whose incidence matrix determines the complex map.
+
+# Returns
+
+A `Dict{Int, Pair{Int, Int}}` mapping each reaction index to
+`source_complex => product_complex`.
 """
 function reactiontocomplexmap(rn::ReactionSystem)
     rxtocomplexmap = Dict{Int, Pair{Int, Int}}()
@@ -123,11 +157,20 @@ function treeweight(tree::SimpleDiGraph, distmx::Matrix{T}) where {T}
 end
 
 """
-    ratematrix(rs::ReactionSystem, parametermap)
+    ratematrix(rs::ReactionSystem, rates = reactionrates(rs))
 
-    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate 
-    constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple 
-    of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+Construct the complex-to-complex rate matrix for a reaction system.
+
+# Arguments
+
+- `rs`: reaction system whose reactions define the matrix entries.
+- `rates`: optional vector of reaction rate constants. When omitted, the
+  symbolic reaction rates from `rs` are used.
+
+# Returns
+
+An `n × n` matrix, where `n` is the number of complexes and entry `(i, j)` is
+the rate associated with a reaction from complex `i` to complex `j`.
 """
 function ratematrix(rs::ReactionSystem, rates::Vector{T} = reactionrates(rs)) where {T}
     complexes, D = reactioncomplexes(rs)

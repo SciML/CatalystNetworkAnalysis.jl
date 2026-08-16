@@ -3,7 +3,20 @@ const C = CatalystNetworkAnalysis
 """
     deficiencyonealgorithm(rn::ReactionSystem)
 
-    Determine whether a regular deficiency one network will have the ability to admit multiple equilibria and degenerate equilibria. Returns true if so. 
+Apply the deficiency-one multistationarity criterion.
+
+# Arguments
+
+- `rn`: a regular reaction system with deficiency one.
+
+# Returns
+
+`true` when the criterion finds a feasible multistationarity witness and
+`false` otherwise.
+
+# Throws
+
+An error when `rn` is not a regular deficiency-one reaction system.
 """
 function deficiencyonealgorithm(rn::ReactionSystem)
     (Catalyst.deficiency(rn) == 1 && isregular(rn)) ||

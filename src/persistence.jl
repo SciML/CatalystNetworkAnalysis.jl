@@ -6,10 +6,20 @@
 """
     ispersistent(rs::ReactionSystem)
 
-    Checks if a reaction system is persistent, meaning that none of its species with positive concentration will go extinct (asymptotically approach 0). The possible outputs: 
-    - :PERSISTENT
-    - :NOT_PERSISTENT
-    - :INCONCLUSIVE: The persistence test is inconclusive; this function currently cannot determine whether this network is persistent or not.
+Determine whether a reaction system is persistent.
+
+A persistent system does not allow a species that starts with positive
+concentration to asymptotically approach zero. The current structural test is
+conclusive for some conservative systems and returns `:INCONCLUSIVE` for the
+remaining cases.
+
+# Arguments
+
+- `rs`: reaction system to analyze.
+
+# Returns
+
+One of `:PERSISTENT`, `:NOT_PERSISTENT`, or `:INCONCLUSIVE`.
 """
 function ispersistent(rs::ReactionSystem)
     siphons = minimalsiphons(rs)
@@ -33,7 +43,29 @@ end
 """
     minimalsiphons(rs::ReactionSystem)
 
-    Constructs the set of minimal siphons of a reaction network, where a siphon is a set of species that can be "switched off," i.e. if the species each have concentration 0, the concentration of all the species will remain 0 for all time. A minimal siphon is one that does not contain a siphon as a strict subset.
+Construct the minimal siphons of a reaction system.
+
+A siphon is a set of species that can be switched off: if every species in
+the set has zero concentration, the species in the set remain zero. A minimal
+siphon contains no siphon as a strict subset.
+
+# Arguments
+
+- `rs`: reaction system to analyze.
+
+# Keyword Arguments
+
+- `algorithm`: either `:SMT` (the default) for the satisfiability-based
+  method or `:ALG` for the algebraic method.
+
+# Returns
+
+A vector of vectors of one-based species indices, one vector for each minimal
+siphon.
+
+# Throws
+
+An error if `algorithm` is neither `:SMT` nor `:ALG`.
 """
 function minimalsiphons(rs::ReactionSystem; algorithm = :SMT)
     if algorithm == :SMT
@@ -138,7 +170,20 @@ end
 """
     iscritical(siphon, S)
 
-    Checks if a siphon is critical, meaning that it does not contain the support of some positive conservation law. A reaction network with a critical siphon cannot be persistent.
+Check whether a siphon is critical.
+
+A siphon is critical when it does not contain the support of a positive
+conservation law. A reaction network with a critical siphon cannot be
+persistent.
+
+# Arguments
+
+- `siphon`: one-based species indices defining the siphon.
+- `S`: stoichiometric matrix for the reaction system.
+
+# Returns
+
+`true` when `siphon` is critical and `false` otherwise.
 """
 function iscritical(siphon::Vector, S::Matrix)
     # Takes the rows of the stoichiometric matrix corresponding to the siphon species

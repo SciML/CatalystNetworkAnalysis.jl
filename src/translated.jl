@@ -3,7 +3,25 @@
 
 # (1) Johnston, M. D. Translated Chemical Reaction Networks. Bull Math Biol 2014, 76 (5), 1081–1116. https://doi.org/10.1007/s11538-014-9947-5.
 
-# Struct representing a network translation.
+"""
+    Translation
+
+Representation of a translated reaction network used by
+[`WRDZ_translation`](@ref).
+
+# Fields
+
+- `rn`: original reaction system.
+- `Y_T`: complex-composition matrix of the translated network.
+- `D_T`: incidence matrix of the translated network.
+- `translatedcomplexmap`: one-based index of the translated complex assigned
+  to each original complex.
+- `checkedrev`: whether reversibility has been checked.
+- `isweaklyrev`: whether the translated network is weakly reversible.
+- `linkageclasses`: linkage classes of the translated network.
+- `effectivedeficiency`: deficiency of the translated reaction graph.
+- `kineticdeficiency`: deficiency of the kinetic-complex graph.
+"""
 mutable struct Translation{T <: Integer}
     """The original reaction network."""
     rn::ReactionSystem
@@ -29,11 +47,22 @@ function Translation(rn, Y_T, D_T, tcmap)
 end
 
 """
-    WRDZ_translation(rn::ReactionNetwork)
+    WRDZ_translation(rn::ReactionSystem)
 
-    Given a reaction network, attempt to find a strongly-resolvable translation that is weakly-reversible and deficiency zero. Such translations are useful because they can be easily parameterized, and their multistability characteristics can be easily determined. Follows the algorithm implemented in (Johnston, 2018). 
+Find a weakly reversible, deficiency-zero translation when one exists.
 
-    Returns `nothing` if no weakly-reversible deficiency-zero translation is possible.
+Such a translation can be parameterized more easily than the original network
+and can simplify multistability analysis. The implementation follows Johnston
+(2018).
+
+# Arguments
+
+- `rn`: reaction system to translate.
+
+# Returns
+
+A [`Translation`](@ref) when a strongly resolvable translation is found, or
+`nothing` when no weakly reversible deficiency-zero translation is available.
 """
 function WRDZ_translation(rn::ReactionSystem)
     rr_adj = construct_rr_graph(rn)
