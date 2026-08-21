@@ -1,6 +1,7 @@
 module CatalystNetworkAnalysis
 
 using Catalyst
+using PrecompileTools: @compile_workload, @setup_workload
 using Satisfiability # For siphon detection
 
 # Algebraic functionality
@@ -41,5 +42,16 @@ export elementary_flux_modes
 
 include("translated.jl")
 export WRDZ_translation
+
+@setup_workload begin
+    @compile_workload begin
+        rn = @reaction_network begin
+            k₁, A --> B
+            k₂, B --> A
+        end
+        isconservative(rn)
+        isconsistent(rn)
+    end
+end
 
 end
