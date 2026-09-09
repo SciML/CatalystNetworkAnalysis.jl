@@ -30,6 +30,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 
 [compat]
+Symbolics = "7.39.2"
 CDDLib = "0.9.4, 0.10"
 Catalyst = "16"
 Combinatorics = "1"
@@ -63,6 +64,7 @@ UnPack = "1"
 julia = "1.10"
 
 [extras]
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 SBMLImporter = "210efffb-c3c8-456d-a807-6f55560b12fe"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 SciMLTesting = "09d9d899-5365-40a9-917a-5f67fddea283"
@@ -71,4 +73,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [targets]
-test = ["Test", "SBMLImporter", "SafeTestsets", "SciMLTesting", "StableRNGs", "UnPack"]
+test = ["Symbolics", "Test", "SBMLImporter", "SafeTestsets", "SciMLTesting", "StableRNGs", "UnPack"]
