@@ -11,5 +11,11 @@ concurrency:
 jobs:
   docs:
     name: "Documentation"
+    # This repository's default GITHUB_TOKEN is read-only; the reusable workflow needs these to build and deploy.
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+      statuses: write
     uses: "SciML/.github/.github/workflows/documentation.yml@v1"
     secrets: "inherit"
