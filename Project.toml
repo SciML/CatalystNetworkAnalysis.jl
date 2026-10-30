@@ -32,7 +32,7 @@ SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 [compat]
 Symbolics = "7.39.2"
 CDDLib = "0.9.4, 0.10"
-Catalyst = "16"
+Catalyst = "16, 17.0"
 Combinatorics = "1"
 DynamicPolynomials = "0.6.0"
 Graphs = "1.12.0"
